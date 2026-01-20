@@ -167,10 +167,11 @@ app.use(
     name: "connect.sid", // Session cookie name
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      secure: true, // HTTPS only (always enabled for production Vercel)
+      secure: true, // HTTPS only (required for sameSite: none)
       httpOnly: true, // Prevent XSS
-      sameSite: "none", // Cross-site cookies for production OAuth
+      sameSite: "none", // Required for cross-origin requests from frontend
       path: "/",
+      // For Vercel: don't set domain, let the browser handle it
     },
   }),
 );
@@ -212,10 +213,11 @@ app.use(
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
-    credentials: true, // Allow cookies
+    credentials: true, // Allow cookies in both directions
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["set-cookie"],
+    exposedHeaders: ["set-cookie"], // Expose Set-Cookie header to frontend
+    maxAge: 86400, // Cache preflight for 24 hours
   }),
 );
 
