@@ -1,7 +1,13 @@
 import { z } from "zod";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+// Get the directory of the current module
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load .env from backend directory
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const envSchema = z.object({
   NODE_ENV: z

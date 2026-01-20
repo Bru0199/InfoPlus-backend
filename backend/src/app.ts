@@ -52,6 +52,18 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // 4. Routes
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "InfoPlus Backend API is running",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      auth: "/api/auth",
+      chat: "/api/chat",
+    },
+  });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/chat", isAuthenticated, chatRouter);
 
