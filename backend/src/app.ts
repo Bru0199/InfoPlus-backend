@@ -5,11 +5,142 @@ import pgSession from "connect-pg-simple";
 import passport from "./auth/passport.js";
 import authRouter from "./auth/routes.js";
 import chatRouter from "./chat/routes.js";
-import { pool } from "./db/index.js"; // Ensure you export 'pool' from your db file
+import { pool, db } from "./db/index.js"; // Ensure you export 'pool' from your db file
 import { env } from "./env.js";
 import { isAuthenticated } from "./auth/middleware.js";
+import { sql } from "drizzle-orm";
 
 const app = express();
+
+// Initialize database tables on app startup (needed for Vercel serverless)
+async function initializeDatabaseTables(): Promise<void> {
+  try {
+    console.log("🔧 Initializing database tables...");
+
+    // Migration 0001: Session table
+    try {
+      await db.execute(
+        sql`
+          CREATE TABLE IF NOT EXISTS "session" (
+            "sid" varchar NOT NULL,
+            "sess" jsonb NOT NULL,
+            "expire" timestamp(6) NOT NULL,
+            CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+          );
+        `
+      );
+      console.log("✅ Session table created/verified");
+    } catch (tableErr) {
+      console.warn("⚠️ Session table creation warning:", tableErr);
+    }
+
+    // Create index on expire column for performance
+    try {
+      await db.execute(
+        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`
+      );
+      console.log("✅ Session expire index created/verified");
+    } catch (indexErr) {
+      console.warn("⚠️ Session index creation warning:", indexErr);
+    }
+
+    // Migration 0002: Core tables (users, conversations, messages)
+    try {
+      await db.execute(
+        sql`
+          CREATE TABLE IF NOT EXISTS "users" (
+            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            "email" text NOT NULL UNIQUE,
+            "name" text,
+            "image" text,
+            "provider" text NOT NULL,
+            "provider_id" text NOT NULL UNIQUE,
+            "created_at" timestamp DEFAULT now() NOT NULL
+          );
+        `
+      );
+      console.log("✅ Users table created/verified");
+    } catch (err) {
+      console.warn("⚠️ Users table creation warning:", err);
+    }
+
+    try {
+      await db.execute(
+        sql`
+          CREATE TABLE IF NOT EXISTS "conversations" (
+            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+            "title" text DEFAULT 'New Chat',
+            "created_at" timestamp DEFAULT now() NOT NULL,
+            "updated_at" timestamp DEFAULT now() NOT NULL
+          );
+        `
+      );
+      console.log("✅ Conversations table created/verified");
+    } catch (err) {
+      console.warn("⚠️ Conversations table creation warning:", err);
+    }
+
+    try {
+      await db.execute(
+        sql`
+          CREATE TABLE IF NOT EXISTS "messages" (
+            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            "conversation_id" uuid NOT NULL REFERENCES "conversations"("id") ON DELETE CASCADE,
+            "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+            "role" text NOT NULL,
+            "content" text NOT NULL,
+            "tool_calls" jsonb,
+            "tool_result" jsonb,
+            "created_at" timestamp DEFAULT now() NOT NULL
+          );
+        `
+      );
+      console.log("✅ Messages table created/verified");
+    } catch (err) {
+      console.warn("⚠️ Messages table creation warning:", err);
+    }
+
+    // Create indexes
+    try {
+      await db.execute(
+        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`
+      );
+      console.log("✅ Conversations user_id index created/verified");
+    } catch (err) {
+      console.warn("⚠️ Conversations index creation warning:", err);
+    }
+
+    try {
+      await db.execute(
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`
+      );
+      console.log("✅ Messages conversation_id index created/verified");
+    } catch (err) {
+      console.warn("⚠️ Messages index creation warning:", err);
+    }
+
+    try {
+      await db.execute(
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`
+      );
+      console.log("✅ Messages user_id index created/verified");
+    } catch (err) {
+      console.warn("⚠️ Messages user_id index creation warning:", err);
+    }
+
+    console.log("✅ Database tables initialized successfully.");
+  } catch (error) {
+    console.error("❌ Database initialization error:", error instanceof Error ? error.message : error);
+    throw error;
+  }
+}
+
+// Initialize database tables immediately
+initializeDatabaseTables().catch((err) => {
+  console.error("❌ Failed to initialize database:", err);
+  // Don't exit - let the app start anyway so Vercel can show logs
+});
 
 // Trust reverse proxy (Vercel/Nginx) - CRITICAL for production cookies
 app.set("trust proxy", 1);
