@@ -1,10 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npm run build",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/backend/api"
+      "src": "backend/package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/backend/api/index.js"
     }
   ]
 }

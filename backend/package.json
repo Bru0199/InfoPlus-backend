@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc",
+    "vercel-build": "npm run build",
     "dev": "nodemon --watch src --ext ts --exec \"npx ts-node src/server.ts\""
   },
   "keywords": [],
