@@ -10,6 +10,8 @@ import { env } from "./env.js";
 import { isAuthenticated } from "./auth/middleware.js";
 
 const app = express();
+// Trust reverse proxy (Vercel) so secure cookies work
+app.set("trust proxy", 1);
 const PostgresStore = pgSession(session);
 
 app.use(
