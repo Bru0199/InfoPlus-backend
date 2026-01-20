@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "backend/package.json",
-      "use": "@vercel/node",
-      "config": {
-        "serverless": true
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -14,5 +11,6 @@
       "src": "/(.*)",
       "dest": "/backend/api/index.js"
     }
-  ]
+  ],
+  "outputDirectory": "backend/dist"
 }
