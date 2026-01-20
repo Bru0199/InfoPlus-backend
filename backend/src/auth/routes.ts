@@ -31,31 +31,42 @@ authRouter.get(
     keepSessionInfo: true // Preserve session data
   }),
   (req, res) => {
-    // Regenerate session to prevent session fixation attacks
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error("❌ Session regeneration error:", err);
-        return res.redirect(`${REDIRECT_URL}/login?error=session`);
-      }
-
-      // Save user to session
-      (req.session as any).passport = { user: (req.user as any).id };
-      
-      req.session.save((err) => {
+    try {
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((err) => {
         if (err) {
-          console.error("❌ Session save error:", err);
+          console.error("❌ Session regeneration error:", err);
           return res.redirect(`${REDIRECT_URL}/login?error=session`);
         }
+
+        // Save user to session
+        if (!req.user) {
+          console.error("❌ No user in request");
+          return res.redirect(`${REDIRECT_URL}/login?error=no_user`);
+        }
+
+        (req.session as any).passport = { user: (req.user as any).id };
         
-        console.log("✅ Google auth success:", {
-          user: (req.user as any)?.email,
-          sessionID: req.sessionID,
-          cookie: req.session.cookie,
+        req.session.save((err) => {
+          if (err) {
+            console.error("❌ Session save error:", err);
+            return res.redirect(`${REDIRECT_URL}/login?error=session`);
+          }
+          
+          console.log("✅ Google auth success:", {
+            user: (req.user as any)?.email,
+            userId: (req.user as any)?.id,
+            sessionID: req.sessionID,
+            cookie: req.session.cookie,
+          });
+          
+          res.redirect(`${REDIRECT_URL}/chat`);
         });
-        
-        res.redirect(`${REDIRECT_URL}/chat`);
       });
-    });
+    } catch (error) {
+      console.error("❌ Google callback error:", error);
+      res.redirect(`${REDIRECT_URL}/login?error=callback`);
+    }
   },
 );
 
@@ -66,31 +77,42 @@ authRouter.get(
     keepSessionInfo: true
   }),
   (req, res) => {
-    // Regenerate session to prevent session fixation attacks
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error("❌ Session regeneration error:", err);
-        return res.redirect(`${REDIRECT_URL}/login?error=session`);
-      }
-
-      // Save user to session
-      (req.session as any).passport = { user: (req.user as any).id };
-      
-      req.session.save((err) => {
+    try {
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((err) => {
         if (err) {
-          console.error("❌ Session save error:", err);
+          console.error("❌ Session regeneration error:", err);
           return res.redirect(`${REDIRECT_URL}/login?error=session`);
         }
+
+        // Save user to session
+        if (!req.user) {
+          console.error("❌ No user in request");
+          return res.redirect(`${REDIRECT_URL}/login?error=no_user`);
+        }
+
+        (req.session as any).passport = { user: (req.user as any).id };
         
-        console.log("✅ GitHub auth success:", {
-          user: (req.user as any)?.email,
-          sessionID: req.sessionID,
-          cookie: req.session.cookie,
+        req.session.save((err) => {
+          if (err) {
+            console.error("❌ Session save error:", err);
+            return res.redirect(`${REDIRECT_URL}/login?error=session`);
+          }
+          
+          console.log("✅ GitHub auth success:", {
+            user: (req.user as any)?.email,
+            userId: (req.user as any)?.id,
+            sessionID: req.sessionID,
+            cookie: req.session.cookie,
+          });
+          
+          res.redirect(`${REDIRECT_URL}/chat`);
         });
-        
-        res.redirect(`${REDIRECT_URL}/chat`);
       });
-    });
+    } catch (error) {
+      console.error("❌ GitHub callback error:", error);
+      res.redirect(`${REDIRECT_URL}/login?error=callback`);
+    }
   },
 );
 
