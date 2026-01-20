@@ -29,11 +29,15 @@ export async function findOrCreateUser(profile: UserProfile) {
       );
 
     if (existingUser) {
-      console.log("✅ User found:", existingUser.id);
+      console.log("✅ EXISTING USER - User found:", {
+        id: existingUser.id,
+        email: existingUser.email,
+        provider: existingUser.provider,
+      });
       return existingUser;
     }
 
-    console.log("📝 Creating new user for email:", profile.email);
+    console.log("📝 NEW USER - Creating new user for email:", profile.email);
     const [newUser] = await db
       .insert(users)
       .values({
@@ -46,7 +50,11 @@ export async function findOrCreateUser(profile: UserProfile) {
       .returning();
 
     if (!newUser) throw new Error("Failed to create user");
-    console.log("✅ User created:", newUser.id);
+    console.log("✅ NEW USER - User created successfully:", {
+      id: newUser.id,
+      email: newUser.email,
+      provider: newUser.provider,
+    });
     return newUser;
   } catch (error) {
     console.error("❌ Error in findOrCreateUser:", error);
