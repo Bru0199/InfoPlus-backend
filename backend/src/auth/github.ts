@@ -11,7 +11,7 @@ const githubAuth = passport.use(
     {
       clientID: env.GITHUB_CLIENT_ID,
       clientSecret: env.GITHUB_CLIENT_SECRET,
-      callbackURL: "/api/auth/github/callback",
+      callbackURL: `${env.BACKEND_URL}/api/auth/github/callback`,
       scope: ["user:email"],
     },
     async (

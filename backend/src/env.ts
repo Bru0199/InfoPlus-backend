@@ -28,17 +28,20 @@ const envSchema = z.object({
   OPENWEATHER_API_KEY: z.string().min(1, "OpenWeather API key is required"),
   EODHD_API_TOKEN: z.string().min(1, "Alpha Vantage API key is required"),
 
-
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1, "OpenAI API key is required"),
   OPENROUTER_API_KEY: z.string().min(1, "OpenAI API key is required"),
-  
-  SESSION_SECRET:z.string().min(1, "SessionSecret key is required"),
 
-  FRONTEND_URL:z
+  SESSION_SECRET: z.string().min(1, "SessionSecret key is required"),
+
+  FRONTEND_URL: z
     .string()
     .url("Frondend must be a valid connection string")
-    .min(1, "Frontend URL is required")
-
+    .min(1, "Frontend URL is required"),
+  
+  BACKEND_URL: z
+    .string()
+    .url("Backend URL must be a valid URL")
+    .min(1, "Backend URL is required"),
 });
 
 const _env = envSchema.safeParse(process.env);

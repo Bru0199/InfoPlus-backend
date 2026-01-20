@@ -1,4 +1,4 @@
-import app from "./app.js";
+import { app } from "./app.js";
 import { env } from "./env.js";
 import { db } from "./db/index.js";
 import { sql } from "drizzle-orm";

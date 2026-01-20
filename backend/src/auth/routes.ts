@@ -29,6 +29,9 @@ authRouter.get(
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     try {
+      console.log("✅ Google callback success, user:", req.user);
+      console.log("Session ID:", req.session?.id);
+      console.log("REDIRECT_URL:", REDIRECT_URL);
       res.redirect(`${REDIRECT_URL}/chat`);
     } catch (err) {
       console.error("Google callback error:", err);

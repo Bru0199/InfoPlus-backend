@@ -15,4 +15,6 @@ const openrouter = createOpenRouter({
 });
 
 // export const geminiModel = openrouter("google/gemini-2.0-flash-exp:free");
-export const geminiModel: LanguageModel = openrouter("xiaomi/mimo-v2-flash:free");
+export const geminiModel: LanguageModel = openrouter(
+  "xiaomi/mimo-v2-flash:free",
+);

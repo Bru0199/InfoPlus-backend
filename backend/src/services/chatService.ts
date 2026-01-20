@@ -88,7 +88,8 @@ Always extract the necessary value from the user's message automatically.
 
         for (const msg of response.messages) {
           // Skip user and assistant messages, only process tool messages
-          if ((msg as any).role === "user" || (msg as any).role === "assistant") continue;
+          if ((msg as any).role === "user" || (msg as any).role === "assistant")
+            continue;
 
           // A. Detect Tool Calls (Assistant Message)
           const toolCalls =

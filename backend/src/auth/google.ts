@@ -11,7 +11,7 @@ const googleAuth = passport.use(
     {
       clientID: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback",
+      callbackURL: `${env.BACKEND_URL}/api/auth/google/callback`,
     },
     async (_accessToken, _refreshToken, profile: Profile, done) => {
       try {

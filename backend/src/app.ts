@@ -18,19 +18,31 @@ app.use(
   session({
     store: new PostgresStore({
       pool: pool,
-      tableName: "session", // Ensure you ran the SQL to create this table
+      tableName: "session",
     }),
     secret: env.SESSION_SECRET || "your-secret-key",
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true - saves session for OAuth
+    proxy: true, // Trust the reverse proxy
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      // Domain is automatically set by express-session based on request
     },
   }),
 );
+
+// Log session creation for debugging
+app.use((req, res, next) => {
+  if (req.session) {
+    console.log("✅ Session available:", req.session.id);
+  } else {
+    console.log("❌ No session!");
+  }
+  next();
+});
 
 // 2. Middleware
 const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000"];
@@ -84,4 +96,5 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
+export { app };
 export default app;
