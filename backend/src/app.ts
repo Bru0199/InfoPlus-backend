@@ -27,7 +27,7 @@ async function initializeDatabaseTables(): Promise<void> {
             "expire" timestamp(6) NOT NULL,
             CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
           );
-        `
+        `,
       );
       console.log("✅ Session table created/verified");
     } catch (tableErr) {
@@ -37,7 +37,7 @@ async function initializeDatabaseTables(): Promise<void> {
     // Create index on expire column for performance
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`
+        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`,
       );
       console.log("✅ Session expire index created/verified");
     } catch (indexErr) {
@@ -57,7 +57,7 @@ async function initializeDatabaseTables(): Promise<void> {
             "provider_id" text NOT NULL UNIQUE,
             "created_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
       console.log("✅ Users table created/verified");
     } catch (err) {
@@ -74,7 +74,7 @@ async function initializeDatabaseTables(): Promise<void> {
             "created_at" timestamp DEFAULT now() NOT NULL,
             "updated_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
       console.log("✅ Conversations table created/verified");
     } catch (err) {
@@ -94,7 +94,7 @@ async function initializeDatabaseTables(): Promise<void> {
             "tool_result" jsonb,
             "created_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
       console.log("✅ Messages table created/verified");
     } catch (err) {
@@ -104,7 +104,7 @@ async function initializeDatabaseTables(): Promise<void> {
     // Create indexes
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`,
       );
       console.log("✅ Conversations user_id index created/verified");
     } catch (err) {
@@ -113,7 +113,7 @@ async function initializeDatabaseTables(): Promise<void> {
 
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`,
       );
       console.log("✅ Messages conversation_id index created/verified");
     } catch (err) {
@@ -122,7 +122,7 @@ async function initializeDatabaseTables(): Promise<void> {
 
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`,
       );
       console.log("✅ Messages user_id index created/verified");
     } catch (err) {
@@ -131,7 +131,10 @@ async function initializeDatabaseTables(): Promise<void> {
 
     console.log("✅ Database tables initialized successfully.");
   } catch (error) {
-    console.error("❌ Database initialization error:", error instanceof Error ? error.message : error);
+    console.error(
+      "❌ Database initialization error:",
+      error instanceof Error ? error.message : error,
+    );
     throw error;
   }
 }
@@ -164,9 +167,9 @@ app.use(
     name: "connect.sid", // Session cookie name
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      secure: isProduction, // HTTPS only in production
+      secure: true, // HTTPS only (always enabled for production Vercel)
       httpOnly: true, // Prevent XSS
-      sameSite: isProduction ? "none" : "lax", // Cross-site for production
+      sameSite: "none", // Cross-site cookies for production OAuth
       path: "/",
     },
   }),
@@ -186,7 +189,13 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration - MUST be before routes
-const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5173"];
+// Explicitly allow the deployed frontend domain alongside env.FRONTEND_URL
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  "https://info-plus-frontend.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
 
 app.use(
   cors({
@@ -195,7 +204,7 @@ app.use(
       if (!origin) {
         return callback(null, true);
       }
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -233,8 +242,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/chat", isAuthenticated, chatRouter);
 
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ 
-    status: "UP", 
+  res.status(200).json({
+    status: "UP",
     user: req.user,
     session: {
       id: req.sessionID,

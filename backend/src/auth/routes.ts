@@ -5,9 +5,11 @@ import { env } from "../env.js";
 const authRouter = Router();
 
 const REDIRECT_URL = env.FRONTEND_URL || "http://localhost:3000";
+const CHAT_REDIRECT_URL = `${REDIRECT_URL}/chat`;
+
 authRouter.get("/google", (req, res, next) => {
   if (req.isAuthenticated()) {
-    return res.redirect(`${REDIRECT_URL}/chat`);
+    return res.redirect(CHAT_REDIRECT_URL);
   }
   passport.authenticate("google", { scope: ["profile", "email"] })(
     req,
@@ -18,7 +20,7 @@ authRouter.get("/google", (req, res, next) => {
 
 authRouter.get("/github", (req, res, next) => {
   if (req.isAuthenticated()) {
-    return res.redirect(`${REDIRECT_URL}/chat`);
+    return res.redirect(CHAT_REDIRECT_URL);
   }
   passport.authenticate("github", { scope: ["user:email"] })(req, res, next);
 });
@@ -26,9 +28,9 @@ authRouter.get("/github", (req, res, next) => {
 // --- Callbacks ---
 authRouter.get(
   "/google/callback",
-  passport.authenticate("google", { 
+  passport.authenticate("google", {
     failureRedirect: `${REDIRECT_URL}/login`,
-    keepSessionInfo: true // Preserve session data
+    keepSessionInfo: true, // Preserve session data
   }),
   (req, res) => {
     try {
@@ -46,21 +48,21 @@ authRouter.get(
         }
 
         (req.session as any).passport = { user: (req.user as any).id };
-        
+
         req.session.save((err) => {
           if (err) {
             console.error("❌ Session save error:", err);
             return res.redirect(`${REDIRECT_URL}/login?error=session`);
           }
-          
+
           console.log("✅ Google auth success:", {
             user: (req.user as any)?.email,
             userId: (req.user as any)?.id,
             sessionID: req.sessionID,
             cookie: req.session.cookie,
           });
-          
-          res.redirect(`${REDIRECT_URL}/chat`);
+
+          res.redirect(CHAT_REDIRECT_URL);
         });
       });
     } catch (error) {
@@ -72,9 +74,9 @@ authRouter.get(
 
 authRouter.get(
   "/github/callback",
-  passport.authenticate("github", { 
+  passport.authenticate("github", {
     failureRedirect: `${REDIRECT_URL}/login`,
-    keepSessionInfo: true
+    keepSessionInfo: true,
   }),
   (req, res) => {
     try {
@@ -92,21 +94,21 @@ authRouter.get(
         }
 
         (req.session as any).passport = { user: (req.user as any).id };
-        
+
         req.session.save((err) => {
           if (err) {
             console.error("❌ Session save error:", err);
             return res.redirect(`${REDIRECT_URL}/login?error=session`);
           }
-          
+
           console.log("✅ GitHub auth success:", {
             user: (req.user as any)?.email,
             userId: (req.user as any)?.id,
             sessionID: req.sessionID,
             cookie: req.session.cookie,
           });
-          
-          res.redirect(`${REDIRECT_URL}/chat`);
+
+          res.redirect(CHAT_REDIRECT_URL);
         });
       });
     } catch (error) {
@@ -125,8 +127,8 @@ authRouter.get("/me", (req, res) => {
     user: req.user,
     sessionData: req.session,
   });
-  
-  res.json({ 
+
+  res.json({
     user: req.user || null,
     authenticated: req.isAuthenticated(),
   });
