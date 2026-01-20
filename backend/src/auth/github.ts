@@ -6,12 +6,15 @@ import { findOrCreateUser } from "./userHelper.js"; // same helper
 
 const GitHubStrategy = githubPkg.Strategy;
 
+const callbackURL = `${env.BACKEND_URL}/api/auth/github/callback`;
+console.log("⚫ GitHub OAuth configured with callback URL:", callbackURL);
+
 const githubAuth = passport.use(
   new GitHubStrategy(
     {
       clientID: env.GITHUB_CLIENT_ID,
       clientSecret: env.GITHUB_CLIENT_SECRET,
-      callbackURL: `${env.BACKEND_URL}/api/auth/github/callback`,
+      callbackURL: callbackURL,
       scope: ["user:email"],
     },
     async (

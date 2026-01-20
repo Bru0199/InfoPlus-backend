@@ -6,12 +6,15 @@ import { findOrCreateUser } from "./userHelper.js"; // your reusable function
 
 const GoogleStrategy = googlePkg.Strategy;
 
+const callbackURL = `${env.BACKEND_URL}/api/auth/google/callback`;
+console.log("🔵 Google OAuth configured with callback URL:", callbackURL);
+
 const googleAuth = passport.use(
   new GoogleStrategy(
     {
       clientID: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${env.BACKEND_URL}/api/auth/google/callback`,
+      callbackURL: callbackURL,
     },
     async (_accessToken, _refreshToken, profile: Profile, done) => {
       try {
