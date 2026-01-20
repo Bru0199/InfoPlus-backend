@@ -5,6 +5,8 @@ import {
   uuid,
   jsonb,
   pgEnum,
+  varchar,
+  index,
 } from "drizzle-orm/pg-core";
 
 // 1. Enums for Data Integrity
@@ -54,3 +56,16 @@ export const messages = pgTable("messages", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// 5. Session Table (for express-session with Neon)
+export const sessions = pgTable(
+  "session",
+  {
+    sid: varchar("sid").primaryKey().notNull(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire", { precision: 6 }).notNull(),
+  },
+  (table) => ({
+    expireIndex: index("IDX_session_expire").on(table.expire),
+  }),
+);

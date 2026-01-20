@@ -47,7 +47,23 @@ const envSchema = z.object({
 const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  console.error("❌ Invalid environment variables:", _env.error.format());
+  console.error("❌ ENVIRONMENT VARIABLE VALIDATION ERROR");
+  console.error("Missing or invalid environment variables:");
+  const errors = _env.error.flatten();
+  console.error(JSON.stringify(errors, null, 2));
+  console.error("\n📝 Required variables:");
+  console.error("  - NODE_ENV (development, production, test)");
+  console.error("  - PORT");
+  console.error("  - DATABASE_URL");
+  console.error("  - GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET");
+  console.error("  - GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET");
+  console.error("  - OPENWEATHER_API_KEY");
+  console.error("  - EODHD_API_TOKEN");
+  console.error("  - GOOGLE_GENERATIVE_AI_API_KEY");
+  console.error("  - OPENROUTER_API_KEY");
+  console.error("  - SESSION_SECRET");
+  console.error("  - FRONTEND_URL");
+  console.error("  - BACKEND_URL");
   process.exit(1);
 }
 

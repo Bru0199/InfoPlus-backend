@@ -26,36 +26,88 @@ authRouter.get("/github", (req, res, next) => {
 // --- Callbacks ---
 authRouter.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { 
+    failureRedirect: `${REDIRECT_URL}/login`,
+    keepSessionInfo: true // Preserve session data
+  }),
   (req, res) => {
-    try {
-      console.log("✅ Google callback success, user:", req.user);
-      console.log("Session ID:", req.session?.id);
-      console.log("REDIRECT_URL:", REDIRECT_URL);
-      res.redirect(`${REDIRECT_URL}/chat`);
-    } catch (err) {
-      console.error("Google callback error:", err);
-      res.status(500).json({ error: "Callback failed", details: String(err) });
-    }
+    // Regenerate session to prevent session fixation attacks
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error("❌ Session regeneration error:", err);
+        return res.redirect(`${REDIRECT_URL}/login?error=session`);
+      }
+
+      // Save user to session
+      (req.session as any).passport = { user: (req.user as any).id };
+      
+      req.session.save((err) => {
+        if (err) {
+          console.error("❌ Session save error:", err);
+          return res.redirect(`${REDIRECT_URL}/login?error=session`);
+        }
+        
+        console.log("✅ Google auth success:", {
+          user: (req.user as any)?.email,
+          sessionID: req.sessionID,
+          cookie: req.session.cookie,
+        });
+        
+        res.redirect(`${REDIRECT_URL}/chat`);
+      });
+    });
   },
 );
 
 authRouter.get(
   "/github/callback",
-  passport.authenticate("github", { failureRedirect: "/login" }),
+  passport.authenticate("github", { 
+    failureRedirect: `${REDIRECT_URL}/login`,
+    keepSessionInfo: true
+  }),
   (req, res) => {
-    try {
-      res.redirect(`${REDIRECT_URL}/chat`);
-    } catch (err) {
-      console.error("GitHub callback error:", err);
-      res.status(500).json({ error: "Callback failed", details: String(err) });
-    }
+    // Regenerate session to prevent session fixation attacks
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error("❌ Session regeneration error:", err);
+        return res.redirect(`${REDIRECT_URL}/login?error=session`);
+      }
+
+      // Save user to session
+      (req.session as any).passport = { user: (req.user as any).id };
+      
+      req.session.save((err) => {
+        if (err) {
+          console.error("❌ Session save error:", err);
+          return res.redirect(`${REDIRECT_URL}/login?error=session`);
+        }
+        
+        console.log("✅ GitHub auth success:", {
+          user: (req.user as any)?.email,
+          sessionID: req.sessionID,
+          cookie: req.session.cookie,
+        });
+        
+        res.redirect(`${REDIRECT_URL}/chat`);
+      });
+    });
   },
 );
 
 // --- Session Management ---
 authRouter.get("/me", (req, res) => {
-  res.json({ user: req.user || null });
+  console.log("🔍 /me endpoint:", {
+    sessionID: req.sessionID,
+    hasSession: !!req.session,
+    isAuthenticated: req.isAuthenticated(),
+    user: req.user,
+    sessionData: req.session,
+  });
+  
+  res.json({ 
+    user: req.user || null,
+    authenticated: req.isAuthenticated(),
+  });
 });
 
 authRouter.get("/logout", (req, res, next) => {

@@ -10,52 +10,72 @@ import { env } from "./env.js";
 import { isAuthenticated } from "./auth/middleware.js";
 
 const app = express();
-// Trust reverse proxy (Vercel) so secure cookies work
+
+// Trust reverse proxy (Vercel/Nginx) - CRITICAL for production cookies
 app.set("trust proxy", 1);
+
 const PostgresStore = pgSession(session);
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// Session configuration
 app.use(
   session({
     store: new PostgresStore({
       pool: pool,
       tableName: "session",
+      createTableIfMissing: true,
     }),
-    secret: env.SESSION_SECRET || "your-secret-key",
+    secret: env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true, // Changed to true - saves session for OAuth
-    proxy: true, // Trust the reverse proxy
+    saveUninitialized: false, // Don't save empty sessions
+    proxy: true, // Trust X-Forwarded-* headers
+    name: "connect.sid", // Session cookie name
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      // Domain is automatically set by express-session based on request
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: isProduction, // HTTPS only in production
+      httpOnly: true, // Prevent XSS
+      sameSite: isProduction ? "none" : "lax", // Cross-site for production
+      path: "/",
     },
   }),
 );
 
-// Log session creation for debugging
+// Session debugging middleware
 app.use((req, res, next) => {
-  if (req.session) {
-    console.log("✅ Session available:", req.session.id);
-  } else {
-    console.log("❌ No session!");
-  }
+  console.log("📋 Request:", {
+    method: req.method,
+    path: req.path,
+    sessionID: req.sessionID,
+    hasSession: !!req.session,
+    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+    user: req.user ? (req.user as any).email : null,
+  });
   next();
 });
 
-// 2. Middleware
-const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000"];
+// CORS configuration - MUST be before routes
+const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5173"];
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        console.warn("❌ CORS blocked origin:", origin);
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
-    credentials: true,
+    credentials: true, // Allow cookies
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["set-cookie"],
   }),
 );
 
@@ -82,7 +102,16 @@ app.use("/api/auth", authRouter);
 app.use("/api/chat", isAuthenticated, chatRouter);
 
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "UP", user: req.user });
+  res.status(200).json({ 
+    status: "UP", 
+    user: req.user,
+    session: {
+      id: req.sessionID,
+      exists: !!req.session,
+      authenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+    },
+    environment: process.env.NODE_ENV,
+  });
 });
 
 app.get("/api/db-test", async (req, res) => {
