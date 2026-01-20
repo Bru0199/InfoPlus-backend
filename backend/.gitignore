@@ -139,3 +139,35 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Documentation files (generated)
+*.md
+!README.md
+!CHANGELOG.md
+
+# Test scripts
+test-*.ts
+check-*.ts
+
+# Compiled output
+dist/
+*.js
+!src/**/*.js
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
