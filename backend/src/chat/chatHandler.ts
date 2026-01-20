@@ -1,4 +1,4 @@
-import { ChatService } from "../services/chatService.ts";
+import { ChatService } from "../services/chatService.js";
 import { type Request, type Response } from "express";
 
 export const maxDuration = 30;

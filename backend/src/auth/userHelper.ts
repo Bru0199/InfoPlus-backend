@@ -1,5 +1,5 @@
-import { db } from "../db/index.ts";
-import { users } from "../db/schema.ts";
+import { db } from "../db/index.js";
+import { users } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 interface UserProfile {

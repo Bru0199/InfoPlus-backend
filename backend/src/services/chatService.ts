@@ -1,11 +1,11 @@
 import { streamText, type StreamTextResult, type ModelMessage } from "ai";
-import { geminiModel } from "../chat/ai.ts";
-import { allTools } from "../chat/tools.ts";
-import { db } from "../db/index.ts";
+import { geminiModel } from "../chat/ai.js";
+import { allTools } from "../chat/tools.js";
+import { db } from "../db/index.js";
 import {
   conversations as conversationsTable,
   messages as messagesTable,
-} from "../db/schema.ts";
+} from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 export const ChatService = {
@@ -81,21 +81,20 @@ Always extract the necessary value from the user's message automatically.
 `,
       messages: coreMessages,
       tools: allTools,
-      maxSteps: 5,
-      retries: 0,
       onFinish: async ({ response }) => {
         console.log("---------------------------");
         console.log("Called OnFinish");
         console.log("---------------------------");
 
         for (const msg of response.messages) {
-          if (msg.role === "user") continue;
+          // Skip user and assistant messages, only process tool messages
+          if ((msg as any).role === "user" || (msg as any).role === "assistant") continue;
 
           // A. Detect Tool Calls (Assistant Message)
           const toolCalls =
             (msg as any).toolCalls ||
-            (Array.isArray(msg.content)
-              ? msg.content.filter((p) => p.type === "tool-call")
+            (Array.isArray((msg as any).content)
+              ? (msg as any).content.filter((p: any) => p.type === "tool-call")
               : null);
 
           // B. Detect Tool Results (Tool Message)

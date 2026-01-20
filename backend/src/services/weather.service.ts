@@ -1,6 +1,6 @@
 // src/services/weatherService.ts
 import axios from "axios";
-import { env } from "../env.ts";
+import { env } from "../env.js";
 
 export async function getWeather(location: string): Promise<any> {
   const weatherKey = env.OPENWEATHER_API_KEY;

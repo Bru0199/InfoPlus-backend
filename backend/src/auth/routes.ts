@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "passport";
-import { env } from "../env.ts";
+import { env } from "../env.js";
 
 const authRouter = Router();
 

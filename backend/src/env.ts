@@ -31,6 +31,7 @@ const envSchema = z.object({
   FRONTEND_URL:z
     .string()
     .url("Frondend must be a valid connection string")
+    .min(1, "Frontend URL is required")
 
 });
 

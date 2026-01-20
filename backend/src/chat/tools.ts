@@ -1,8 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { getWeather } from "../services/weather.service.ts";
-import { getStockPrice } from "../services/stock.service.ts";
-import { getF1Matches } from "../services/f1.service.ts";
+import { getWeather } from "../services/weather.service.js";
+import { getStockPrice } from "../services/stock.service.js";
+import { getF1Matches } from "../services/f1.service.js";
 
 export const allTools = {
   // 1. Weather Tool
@@ -13,7 +13,8 @@ export const allTools = {
         .string()
         .describe("The name of the city, e.g., Bengaluru, London, or New York"),
     }),
-    execute: async ({ location }: { location: string }) => {
+    execute: async (params: any) => {
+      const { location } = params as { location: string };
       console.log("passing the value location", { location });
 
       if (!location || location.trim() === "") {
@@ -24,7 +25,7 @@ export const allTools = {
 
       return await getWeather(location);
     },
-  }),
+  } as any),
 
   // 2. Stock Tool
   getStockPrice: tool({
@@ -32,7 +33,8 @@ export const allTools = {
     parameters: z.object({
       symbol: z.string().describe("The stock ticker symbol, e.g. AAPL, TSLA"),
     }),
-    execute: async ({ symbol }: { symbol: string }) => {
+    execute: async (params: any) => {
+      const { symbol } = params as { symbol: string };
       console.log("passing the value symbol", { symbol });
 
       if (!symbol || symbol.trim() === "") {
@@ -43,7 +45,7 @@ export const allTools = {
 
       return await getStockPrice(symbol);
     },
-  }),
+  } as any),
 
   // 3. F1 Tool
   getF1Matches: tool({
@@ -58,5 +60,5 @@ export const allTools = {
 
       return result;
     },
-  }),
+  } as any),
 };

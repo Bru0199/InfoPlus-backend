@@ -1,8 +1,8 @@
-import { db } from "../db/index.ts";
+import { db } from "../db/index.js";
 import {
   conversations as conversationsTable,
   messages as messagesTable,
-} from "../db/schema.ts";
+} from "../db/schema.js";
 import { eq, and, desc } from "drizzle-orm";
 
 export const conversationService = {
@@ -26,7 +26,7 @@ export const conversationService = {
         );
 
       // result.rowCount tells us if a row was actually found and deleted
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error("Error in ConversationService.deleteById:", error);
       throw error;

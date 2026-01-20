@@ -1,6 +1,6 @@
 // src/services/stockService.ts
 import axios from "axios";
-import { env } from "../env.ts";
+import { env } from "../env.js";
 
 export async function getStockPrice(symbol: string): Promise<any> {
   const stockKey = env.EODHD_API_TOKEN;

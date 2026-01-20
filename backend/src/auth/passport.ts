@@ -1,11 +1,11 @@
 import passport from "passport";
-import { db } from "../db/index.ts";
-import { users } from "../db/schema.ts";
+import { db } from "../db/index.js";
+import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 // We import these files just to "register" the strategies
-import "./google.ts";
-import "./github.ts";
+import "./google.js";
+import "./github.js";
 
 // 1. Serialize: Decide what data to save in the cookie (we save the user ID)
 passport.serializeUser((user: any, done) => {

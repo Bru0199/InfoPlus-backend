@@ -2,12 +2,12 @@ import express from "express";
 import cors from "cors";
 import session from "express-session";
 import pgSession from "connect-pg-simple";
-import passport from "../src/auth/passport.ts";
-import authRouter from "./auth/routes.ts";
-import chatRouter from "./chat/routes.ts";
-import { pool } from "./db/index.ts"; // Ensure you export 'pool' from your db file
-import { env } from "./env.ts";
-import { isAuthenticated } from "./auth/middleware.ts";
+import passport from "./auth/passport.js";
+import authRouter from "./auth/routes.js";
+import chatRouter from "./chat/routes.js";
+import { pool } from "./db/index.js"; // Ensure you export 'pool' from your db file
+import { env } from "./env.js";
+import { isAuthenticated } from "./auth/middleware.js";
 
 const app = express();
 const PostgresStore = pgSession(session);

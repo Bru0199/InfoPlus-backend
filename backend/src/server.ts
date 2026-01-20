@@ -1,7 +1,7 @@
-import app from './app.ts';
-import { env } from './env.ts';
-import { db } from './db/index.ts';
-import { sql } from 'drizzle-orm';
+import app from "./app.js";
+import { env } from "./env.js";
+import { db } from "./db/index.js";
+import { sql } from "drizzle-orm";
 
 const port = env.PORT ?? 3000; // default to 3000 if PORT not set
 
@@ -10,19 +10,19 @@ const port = env.PORT ?? 3000; // default to 3000 if PORT not set
  */
 async function verifyDatabaseConnection(
   retries = 5,
-  delay = 2000 // 2 seconds
+  delay = 2000, // 2 seconds
 ): Promise<void> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await db.execute(sql`SELECT 1`);
-      console.log('✅ Database connection verified successfully.');
+      console.log("✅ Database connection verified successfully.");
       return; // success
     } catch (error) {
       console.warn(
-        `⚠️ Database connection attempt ${attempt} failed: ${error}`
+        `⚠️ Database connection attempt ${attempt} failed: ${error}`,
       );
       if (attempt === retries) {
-        throw new Error('❌ Database connection failed after retries.');
+        throw new Error("❌ Database connection failed after retries.");
       }
       console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -35,7 +35,7 @@ async function verifyDatabaseConnection(
  */
 async function startServer() {
   try {
-    console.log('🔌 Verifying database connection...');
+    console.log("🔌 Verifying database connection...");
     await verifyDatabaseConnection();
 
     app.listen(port, () => {

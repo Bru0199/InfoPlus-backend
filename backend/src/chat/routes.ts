@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { isAuthenticated } from "../auth/middleware.ts";
-import { chatHandler } from "../chat/chathandler.ts";
+import { isAuthenticated } from "../auth/middleware.js";
 
-import { conversationService } from "../services/conversationService.ts";
+import { conversationService } from "../services/conversationService.js";
+import { chatHandler } from "./chatHandler.js";
 
 const router = Router();
 
@@ -35,7 +35,7 @@ router.delete(
 
       const wasDeleted = await conversationService.deleteById(
         userId,
-        conversationId,
+        conversationId as string,
       );
 
       if (wasDeleted) {
@@ -67,7 +67,7 @@ router.get(
 
       const messages = await conversationService.getMessagesByConversationId(
         userId,
-        conversationId,
+        conversationId as string,
       );
 
       if (!messages || messages.length === 0) {

@@ -1,8 +1,8 @@
 import passport from "passport";
 import googlePkg from "passport-google-oauth20"; // CommonJS default import
 import type { Profile } from "passport-google-oauth20"; // Type only
-import { env } from "../env.ts";
-import { findOrCreateUser } from "./userHelper.ts"; // your reusable function
+import { env } from "../env.js";
+import { findOrCreateUser } from "./userHelper.js"; // your reusable function
 
 const GoogleStrategy = googlePkg.Strategy;
 
@@ -16,7 +16,7 @@ const googleAuth = passport.use(
     async (_accessToken, _refreshToken, profile: Profile, done) => {
       try {
         const email = profile.emails?.[0]?.value ?? "";
-        const image = profile.photos?.[0]?.value;
+        const image = profile.photos?.[0]?.value??"";
         const name = profile.displayName ?? "User";
 
         const user = await findOrCreateUser({
