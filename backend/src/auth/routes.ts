@@ -27,13 +27,27 @@ authRouter.get("/github", (req, res, next) => {
 authRouter.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
-  (req, res) => res.redirect(`${REDIRECT_URL}/chat`),
+  (req, res) => {
+    try {
+      res.redirect(`${REDIRECT_URL}/chat`);
+    } catch (err) {
+      console.error("Google callback error:", err);
+      res.status(500).json({ error: "Callback failed", details: String(err) });
+    }
+  },
 );
 
 authRouter.get(
   "/github/callback",
   passport.authenticate("github", { failureRedirect: "/login" }),
-  (req, res) => res.redirect(`${REDIRECT_URL}/chat`),
+  (req, res) => {
+    try {
+      res.redirect(`${REDIRECT_URL}/chat`);
+    } catch (err) {
+      console.error("GitHub callback error:", err);
+      res.status(500).json({ error: "Callback failed", details: String(err) });
+    }
+  },
 );
 
 // --- Session Management ---

@@ -71,4 +71,15 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "UP", user: req.user });
 });
 
+app.get("/api/db-test", async (req, res) => {
+  try {
+    const { db } = await import("./db/index.js");
+    const { sql } = await import("drizzle-orm");
+    await db.execute(sql`SELECT 1`);
+    res.status(200).json({ database: "Connected ✅" });
+  } catch (error: any) {
+    res.status(500).json({ database: "Failed ❌", error: error.message });
+  }
+});
+
 export default app;
