@@ -88,32 +88,56 @@ Always extract the necessary value from the user's message automatically.
         for (const msg of response.messages) {
           if ((msg as any).role === "user") continue;
 
-          const toolCalls =
-            (msg as any).toolCalls ||
-            (Array.isArray((msg as any).content)
-              ? (msg as any).content.filter((p: any) => p.type === "tool-call")
-              : null);
+          let toolCallsData = null;
+          let toolResultData = null;
 
-          const toolResults =
-            (msg as any).toolResults ||
-            (Array.isArray(msg.content)
-              ? msg.content.filter((p) => p.type === "tool-result")
-              : null);
+          if (Array.isArray((msg as any).content)) {
+            const toolCallParts = (msg as any).content.filter(
+              (p: any) => p.type === "tool-call"
+            );
+            const toolResultParts = (msg as any).content.filter(
+              (p: any) => p.type === "tool-result"
+            );
+
+            if (toolCallParts.length > 0) {
+              toolCallsData = JSON.stringify(
+                toolCallParts.map((tc: any) => ({
+                  id: tc.toolCallId || tc.id || `tool_${Date.now()}`,
+                  toolName: tc.toolName || "unknown",
+                  args: tc.args || {},
+                }))
+              );
+              logger.info("Storing tool calls:", toolCallsData);
+            }
+
+            if (toolResultParts.length > 0) {
+              toolResultData = JSON.stringify(
+                toolResultParts.map((tr: any) => ({
+                  id: tr.toolCallId || tr.id,
+                  toolName: tr.toolName || "unknown",
+                  result: tr.result || tr.output || {},
+                }))
+              );
+              logger.info("Storing tool results:", toolResultData);
+            }
+          }
 
           try {
+            const contentStr =
+              typeof msg.content === "string"
+                ? msg.content
+                : JSON.stringify(msg.content);
+
             await db.insert(messagesTable).values({
               conversationId,
               userId,
               role: msg.role as any,
-              content:
-                typeof msg.content === "string"
-                  ? msg.content
-                  : JSON.stringify(msg.content),
-              toolCalls: toolCalls?.length ? JSON.stringify(toolCalls) : null,
-              toolResult: toolResults?.length
-                ? JSON.stringify(toolResults)
-                : null,
+              content: contentStr,
+              toolCalls: toolCallsData,
+              toolResult: toolResultData,
             });
+
+            logger.info(`Message stored: role=${msg.role}, toolCalls=${toolCallsData ? "yes" : "no"}, toolResult=${toolResultData ? "yes" : "no"}`);
           } catch (error) {
             logger.error("Error storing message:", error);
           }
