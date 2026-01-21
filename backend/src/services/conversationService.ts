@@ -4,6 +4,7 @@ import {
   messages as messagesTable,
 } from "../db/schema.js";
 import { eq, and, desc } from "drizzle-orm";
+import { logger } from "../utils/logger.js";
 
 export const conversationService = {
   async getUserConversations(userId: string) {
@@ -25,10 +26,9 @@ export const conversationService = {
           ),
         );
 
-      // result.rowCount tells us if a row was actually found and deleted
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error("Error in ConversationService.deleteById:", error);
+      logger.error("Error in ConversationService.deleteById:", error);
       throw error;
     }
   },

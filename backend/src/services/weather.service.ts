@@ -1,11 +1,11 @@
-// src/services/weatherService.ts
 import axios from "axios";
 import { env } from "../env.js";
+import { logger } from "../utils/logger.js";
 
 export async function getWeather(location: string): Promise<any> {
   const weatherKey = env.OPENWEATHER_API_KEY;
 
-  console.log(`📡 Requesting weather for: "${location}"`);
+  logger.info(`Requesting weather for: "${location}"`);
 
   if (!location || location.trim() === "") {
     return { error: "No city name provided. Please specify a location." };
@@ -21,7 +21,7 @@ export async function getWeather(location: string): Promise<any> {
       return `I'm sorry, I couldn't find a city named "${location}". Please check the spelling and try again.`;
     }
 
-    console.error("Weather API Error:", error.message);
+    logger.error("Weather API Error:", error.message);
     return `I encountered an error while trying to get the weather for ${location}. Please try again later.`;
   }
 }

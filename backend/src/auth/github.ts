@@ -1,13 +1,14 @@
 import passport from "passport";
-import githubPkg from "passport-github2"; // CommonJS default import
-import type { Profile } from "passport-github2"; // Type only
+import githubPkg from "passport-github2";
+import type { Profile } from "passport-github2";
 import { env } from "../env.js";
-import { findOrCreateUser } from "./userHelper.js"; // same helper
+import { findOrCreateUser } from "./userHelper.js";
+import { logger } from "../utils/logger.js";
 
 const GitHubStrategy = githubPkg.Strategy;
 
 const callbackURL = `${env.BACKEND_URL}/api/auth/github/callback`;
-console.log("⚫ GitHub OAuth configured with callback URL:", callbackURL);
+logger.auth("GitHub OAuth configured with callback URL:", callbackURL);
 
 const githubAuth = passport.use(
   new GitHubStrategy(
@@ -40,11 +41,10 @@ const githubAuth = passport.use(
         const email: string = profile.emails?.[0]?.value ?? "";
         const image = profile.photos?.[0]?.value ?? "";
         const name = profile.username ?? "User";
-
         const user = await findOrCreateUser({
           email,
           name: name,
-          image: image, // <-- default to empty string
+          image: image,
           provider: "github",
           providerId: profile.id,
         });

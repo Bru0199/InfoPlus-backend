@@ -1,270 +1,149 @@
+/**
+ * Express Application Configuration
+ * Main entry point for API server
+ */
+
 import express from "express";
-import cors from "cors";
-import session from "express-session";
-import pgSession from "connect-pg-simple";
 import passport from "./auth/passport.js";
 import authRouter from "./auth/routes.js";
 import chatRouter from "./chat/routes.js";
-import { pool, db } from "./db/index.js"; // Ensure you export 'pool' from your db file
+import { pool } from "./db/index.js";
 import { env } from "./env.js";
 import { isAuthenticated } from "./auth/middleware.js";
-import { sql } from "drizzle-orm";
+import { initializeDatabaseTables } from "./db/migrations.js";
+import { configureCors, configureSession } from "./config/middleware.js";
+import { logger } from "./utils/logger.js";
+import { API_ROUTES } from "./constants/index.js";
 
+// Initialize Express app
 const app = express();
 
+// ============================================================================
+// DATABASE INITIALIZATION
+// ============================================================================
+
 // Initialize database tables on app startup (needed for Vercel serverless)
-async function initializeDatabaseTables(): Promise<void> {
-  try {
-    console.log("🔧 Initializing database tables...");
-
-    // Migration 0001: Session table
-    try {
-      await db.execute(
-        sql`
-          CREATE TABLE IF NOT EXISTS "session" (
-            "sid" varchar NOT NULL,
-            "sess" jsonb NOT NULL,
-            "expire" timestamp(6) NOT NULL,
-            CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
-          );
-        `,
-      );
-      console.log("✅ Session table created/verified");
-    } catch (tableErr) {
-      console.warn("⚠️ Session table creation warning:", tableErr);
-    }
-
-    // Create index on expire column for performance
-    try {
-      await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`,
-      );
-      console.log("✅ Session expire index created/verified");
-    } catch (indexErr) {
-      console.warn("⚠️ Session index creation warning:", indexErr);
-    }
-
-    // Migration 0002: Core tables (users, conversations, messages)
-    try {
-      await db.execute(
-        sql`
-          CREATE TABLE IF NOT EXISTS "users" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "email" text NOT NULL UNIQUE,
-            "name" text,
-            "image" text,
-            "provider" text NOT NULL,
-            "provider_id" text NOT NULL UNIQUE,
-            "created_at" timestamp DEFAULT now() NOT NULL
-          );
-        `,
-      );
-      console.log("✅ Users table created/verified");
-    } catch (err) {
-      console.warn("⚠️ Users table creation warning:", err);
-    }
-
-    try {
-      await db.execute(
-        sql`
-          CREATE TABLE IF NOT EXISTS "conversations" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-            "title" text DEFAULT 'New Chat',
-            "created_at" timestamp DEFAULT now() NOT NULL,
-            "updated_at" timestamp DEFAULT now() NOT NULL
-          );
-        `,
-      );
-      console.log("✅ Conversations table created/verified");
-    } catch (err) {
-      console.warn("⚠️ Conversations table creation warning:", err);
-    }
-
-    try {
-      await db.execute(
-        sql`
-          CREATE TABLE IF NOT EXISTS "messages" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "conversation_id" uuid NOT NULL REFERENCES "conversations"("id") ON DELETE CASCADE,
-            "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-            "role" text NOT NULL,
-            "content" text NOT NULL,
-            "tool_calls" jsonb,
-            "tool_result" jsonb,
-            "created_at" timestamp DEFAULT now() NOT NULL
-          );
-        `,
-      );
-      console.log("✅ Messages table created/verified");
-    } catch (err) {
-      console.warn("⚠️ Messages table creation warning:", err);
-    }
-
-    // Create indexes
-    try {
-      await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`,
-      );
-      console.log("✅ Conversations user_id index created/verified");
-    } catch (err) {
-      console.warn("⚠️ Conversations index creation warning:", err);
-    }
-
-    try {
-      await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`,
-      );
-      console.log("✅ Messages conversation_id index created/verified");
-    } catch (err) {
-      console.warn("⚠️ Messages index creation warning:", err);
-    }
-
-    try {
-      await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`,
-      );
-      console.log("✅ Messages user_id index created/verified");
-    } catch (err) {
-      console.warn("⚠️ Messages user_id index creation warning:", err);
-    }
-
-    console.log("✅ Database tables initialized successfully.");
-  } catch (error) {
-    console.error(
-      "❌ Database initialization error:",
-      error instanceof Error ? error.message : error,
-    );
-    throw error;
-  }
-}
-
-// Initialize database tables immediately
 initializeDatabaseTables().catch((err) => {
-  console.error("❌ Failed to initialize database:", err);
+  logger.error("Failed to initialize database:", err);
   // Don't exit - let the app start anyway so Vercel can show logs
 });
+
+// ============================================================================
+// PROXY & TRUST SETTINGS
+// ============================================================================
 
 // Trust reverse proxy (Vercel/Nginx) - CRITICAL for production cookies
 app.set("trust proxy", 1);
 
-const PostgresStore = pgSession(session);
+// ============================================================================
+// MIDDLEWARE CONFIGURATION
+// ============================================================================
 
-const isProduction = process.env.NODE_ENV === "production";
+// Session middleware - MUST come before Passport
+app.use(configureSession(pool));
 
-// Session configuration
-app.use(
-  session({
-    store: new PostgresStore({
-      pool: pool,
-      tableName: "session",
-      createTableIfMissing: true,
-    }),
-    secret: env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false, // Don't save empty sessions
-    proxy: true, // Trust X-Forwarded-* headers
-    name: "connect.sid", // Session cookie name
-    cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      secure: true, // HTTPS only (required for sameSite: none)
-      httpOnly: true, // Prevent XSS
-      sameSite: "none", // Required for cross-origin requests from frontend
-      path: "/",
-      // For Vercel: don't set domain, let the browser handle it
-    },
-  }),
-);
-
-// Session debugging middleware
+// Request logging middleware
 app.use((req, res, next) => {
-  console.log("📋 Request:", {
-    method: req.method,
-    path: req.path,
+  logger.request(req.method, req.path, {
     sessionID: req.sessionID,
-    hasSession: !!req.session,
-    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
-    user: req.user ? (req.user as any).email : null,
+    isAuthenticated: req.isAuthenticated?.(),
+    user: (req.user as any)?.email || null,
   });
   next();
 });
 
-// CORS configuration - MUST be before routes
-// Explicitly allow the deployed frontend domain alongside env.FRONTEND_URL
+// CORS middleware - MUST be before routes
 const allowedOrigins = [
   env.FRONTEND_URL,
   "https://info-plus-frontend.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
 ];
+app.use(configureCors(allowedOrigins));
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn("❌ CORS blocked origin:", origin);
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
-      }
-    },
-    credentials: true, // Allow cookies in both directions
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["set-cookie"], // Expose Set-Cookie header to frontend
-    maxAge: 86400, // Cache preflight for 24 hours
-  }),
-);
-
+// Body parser middleware
 app.use(express.json());
 
-// 3. Initialize Passport
+// ============================================================================
+// AUTHENTICATION
+// ============================================================================
+
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 4. Routes
+// ============================================================================
+// ROUTES
+// ============================================================================
+
+// Health check route
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "InfoPlus Backend API is running",
     version: "1.0.1",
+    environment: env.NODE_ENV,
     endpoints: {
-      health: "/api/health",
-      auth: "/api/auth",
-      chat: "/api/chat",
+      health: API_ROUTES.HEALTH,
+      auth: API_ROUTES.AUTH.BASE,
+      chat: API_ROUTES.CHAT.BASE,
     },
   });
 });
 
-app.use("/api/auth", authRouter);
-app.use("/api/chat", isAuthenticated, chatRouter);
+// API Routes
+app.use(API_ROUTES.AUTH.BASE, authRouter);
+app.use(API_ROUTES.CHAT.BASE, isAuthenticated, chatRouter);
 
-app.get("/api/health", (req, res) => {
+// Health endpoint with session info
+app.get(API_ROUTES.HEALTH, (req, res) => {
   res.status(200).json({
     status: "UP",
-    user: req.user,
+    user: req.user || null,
     session: {
       id: req.sessionID,
       exists: !!req.session,
-      authenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+      authenticated: req.isAuthenticated?.() || false,
     },
-    environment: process.env.NODE_ENV,
+    environment: env.NODE_ENV,
   });
 });
 
-app.get("/api/db-test", async (req, res) => {
+// Database connection test endpoint
+app.get(API_ROUTES.DB_TEST, async (req, res) => {
   try {
     const { db } = await import("./db/index.js");
     const { sql } = await import("drizzle-orm");
     await db.execute(sql`SELECT 1`);
     res.status(200).json({ database: "Connected ✅" });
   } catch (error: any) {
-    res.status(500).json({ database: "Failed ❌", error: error.message });
+    res.status(500).json({
+      database: "Failed ❌",
+      error: error.message,
+    });
   }
+});
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+app.use((req, res) => {
+  logger.warn(`404 Not Found: ${req.method} ${req.path}`, {
+    query: req.query,
+    headers: req.headers,
+  });
+  res.status(404).json({
+    success: false,
+    error: `Endpoint ${req.method} ${req.path} not found`,
+  });
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  logger.error("Unhandled error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || "Internal Server Error",
+  });
 });
 
 export { app };

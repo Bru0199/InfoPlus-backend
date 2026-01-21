@@ -7,6 +7,7 @@ import {
   messages as messagesTable,
 } from "../db/schema.js";
 import { eq } from "drizzle-orm";
+import { logger } from "../utils/logger.js";
 
 export const ChatService = {
   async processRequest(
@@ -53,7 +54,7 @@ export const ChatService = {
     }
 
     const coreMessages: ModelMessage[] = safeMessages.map((m) => ({
-      role: m.role ?? "user", // Fallback role
+      role: m.role ?? "user",
       content: m.content
         ? typeof m.content === "string"
           ? m.content
@@ -82,23 +83,18 @@ Always extract the necessary value from the user's message automatically.
       messages: coreMessages,
       tools: allTools,
       onFinish: async ({ response }) => {
-        console.log("---------------------------");
-        console.log("Called OnFinish");
-        console.log("---------------------------");
+        logger.info("Chat stream finished, processing messages");
 
         for (const msg of response.messages) {
-          // Skip user and assistant messages, only process tool messages
           if ((msg as any).role === "user" || (msg as any).role === "assistant")
             continue;
 
-          // A. Detect Tool Calls (Assistant Message)
           const toolCalls =
             (msg as any).toolCalls ||
             (Array.isArray((msg as any).content)
               ? (msg as any).content.filter((p: any) => p.type === "tool-call")
               : null);
 
-          // B. Detect Tool Results (Tool Message)
           const toolResults =
             (msg as any).toolResults ||
             (Array.isArray(msg.content)
@@ -113,7 +109,6 @@ Always extract the necessary value from the user's message automatically.
               typeof msg.content === "string"
                 ? msg.content
                 : JSON.stringify(msg.content),
-            // If it's the assistant, we save the call. If it's the tool, we save the result.
             toolCalls: toolCalls?.length ? JSON.stringify(toolCalls) : null,
             toolResult: toolResults?.length
               ? JSON.stringify(toolResults)

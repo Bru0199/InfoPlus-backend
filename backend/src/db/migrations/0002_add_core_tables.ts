@@ -1,5 +1,6 @@
+import { logger } from "../../utils/logger.js";
+
 export async function up(db: any) {
-  // Create users table
   await db.execute(`
     CREATE TABLE IF NOT EXISTS "users" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -11,9 +12,8 @@ export async function up(db: any) {
       "created_at" timestamp DEFAULT now() NOT NULL
     );
   `);
-  console.log("✅ Users table created successfully");
+  logger.success("Users table created successfully");
 
-  // Create conversations table
   await db.execute(`
     CREATE TABLE IF NOT EXISTS "conversations" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,9 +23,8 @@ export async function up(db: any) {
       "updated_at" timestamp DEFAULT now() NOT NULL
     );
   `);
-  console.log("✅ Conversations table created successfully");
+  logger.success("Conversations table created successfully");
 
-  // Create messages table
   await db.execute(`
     CREATE TABLE IF NOT EXISTS "messages" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -38,29 +37,27 @@ export async function up(db: any) {
       "created_at" timestamp DEFAULT now() NOT NULL
     );
   `);
-  console.log("✅ Messages table created successfully");
+  logger.success("Messages table created successfully");
 
-  // Create indexes for better query performance
   await db.execute(`
     CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");
   `);
-  console.log("✅ Conversations user_id index created");
+  logger.success("Conversations user_id index created");
 
   await db.execute(`
     CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");
   `);
-  console.log("✅ Messages conversation_id index created");
+  logger.success("Messages conversation_id index created");
 
   await db.execute(`
     CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");
   `);
-  console.log("✅ Messages user_id index created");
+  logger.success("Messages user_id index created");
 }
 
 export async function down(db: any) {
-  // Drop tables in reverse order (respecting foreign keys)
   await db.execute(`DROP TABLE IF NOT EXISTS "messages" CASCADE;`);
   await db.execute(`DROP TABLE IF NOT EXISTS "conversations" CASCADE;`);
   await db.execute(`DROP TABLE IF NOT EXISTS "users" CASCADE;`);
-  console.log("❌ Core tables dropped");
+  logger.info("Core tables dropped");
 }

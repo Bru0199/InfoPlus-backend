@@ -1,6 +1,6 @@
-// src/services/stockService.ts
 import axios from "axios";
 import { env } from "../env.js";
+import { logger } from "../utils/logger.js";
 
 export async function getStockPrice(symbol: string): Promise<any> {
   const stockKey = env.EODHD_API_TOKEN;
@@ -15,7 +15,7 @@ export async function getStockPrice(symbol: string): Promise<any> {
     }
     return data;
   } catch (error: any) {
-    console.error("Stock Service API Error:", error.message);
+    logger.error("Stock Service API Error:", error.message);
     return { error: "Failed to fetch stock data." };
   }
 }

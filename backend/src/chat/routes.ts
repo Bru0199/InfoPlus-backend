@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { isAuthenticated } from "../auth/middleware.js";
+import { logger } from "../utils/logger.js";
 
 import { conversationService } from "../services/conversationService.js";
 import { chatHandler } from "./chatHandler.js";
@@ -26,7 +27,6 @@ router.delete(
       const { conversationId } = req.params;
       const userId = (req.user as any)?.id;
 
-      // Check if conversationId is a valid UUID format if necessary
       if (!conversationId) {
         return res
           .status(400)
@@ -39,7 +39,7 @@ router.delete(
       );
 
       if (wasDeleted) {
-        console.log(`✅ Chat ${conversationId} removed.`);
+        logger.info(`Chat ${conversationId} removed.`);
         return res
           .status(200)
           .json({ success: true, message: "Deleted successfully" });
@@ -76,7 +76,7 @@ router.get(
 
       res.json(messages);
     } catch (error) {
-      console.error("Fetch Messages Error:", error);
+      logger.error("Fetch Messages Error:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   },

@@ -1,58 +1,48 @@
-// Global error handler for uncaught exceptions
-console.log("⚙️ [server.ts] Starting server initialization...");
-
 process.on("uncaughtException", (err: any) => {
-  console.error("❌ UNCAUGHT EXCEPTION:");
+  logger.error("UNCAUGHT EXCEPTION:");
   if (err instanceof Error) {
-    console.error("Message:", err.message);
-    console.error("Stack:", err.stack);
+    logger.error("Message:", err.message);
+    logger.error("Stack:", err.stack);
   } else if (typeof err === "object" && err !== null) {
-    console.error(JSON.stringify(err, null, 2));
+    logger.error(JSON.stringify(err, null, 2));
   } else {
-    console.error(String(err));
+    logger.error(String(err));
   }
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason: any) => {
-  console.error("❌ UNHANDLED REJECTION:");
+  logger.error("UNHANDLED REJECTION:");
   if (reason instanceof Error) {
-    console.error("Message:", reason.message);
-    console.error("Stack:", reason.stack);
+    logger.error("Message:", reason.message);
+    logger.error("Stack:", reason.stack);
   } else if (typeof reason === "object" && reason !== null) {
-    console.error(JSON.stringify(reason, null, 2));
+    logger.error(JSON.stringify(reason, null, 2));
   } else {
-    console.error(String(reason));
+    logger.error(String(reason));
   }
   process.exit(1);
 });
-
-console.log("⚙️ [server.ts] Importing modules...");
 
 import { app } from "./app.js";
 import { env } from "./env.js";
 import { db } from "./db/index.js";
 import { sql } from "drizzle-orm";
+import { logger } from "./utils/logger.js";
 
-console.log("⚙️ [server.ts] Modules imported successfully!");
+const port = env.PORT ?? 3000;
 
-const port = env.PORT ?? 3000; // default to 3000 if PORT not set
-
-console.log("📋 Server configuration:", {
+logger.info("Server configuration:", {
   port,
   env: process.env.NODE_ENV,
   backend_url: process.env.BACKEND_URL,
   frontend_url: process.env.FRONTEND_URL,
 });
 
-/**
- * Initialize database tables
- */
 async function initializeDatabaseTables(): Promise<void> {
   try {
-    console.log("🔧 Initializing database tables...");
+    logger.db("Initializing database tables...");
 
-    // Migration 0001: Session table
     try {
       await db.execute(
         sql`
@@ -62,24 +52,22 @@ async function initializeDatabaseTables(): Promise<void> {
             "expire" timestamp(6) NOT NULL,
             CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
           );
-        `
+        `,
       );
-      console.log("✅ Session table created/verified");
+      logger.db("Session table created/verified");
     } catch (tableErr) {
-      console.warn("⚠️ Session table creation warning:", tableErr);
+      logger.warn("Session table creation warning:", tableErr);
     }
 
-    // Create index on expire column for performance
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`
+        sql`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`,
       );
-      console.log("✅ Session expire index created/verified");
+      logger.db("Session expire index created/verified");
     } catch (indexErr) {
-      console.warn("⚠️ Session index creation warning:", indexErr);
+      logger.warn("Session index creation warning:", indexErr);
     }
 
-    // Migration 0002: Core tables (users, conversations, messages)
     try {
       await db.execute(
         sql`
@@ -92,11 +80,11 @@ async function initializeDatabaseTables(): Promise<void> {
             "provider_id" text NOT NULL UNIQUE,
             "created_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
-      console.log("✅ Users table created/verified");
+      logger.db("Users table created/verified");
     } catch (err) {
-      console.warn("⚠️ Users table creation warning:", err);
+      logger.warn("Users table creation warning:", err);
     }
 
     try {
@@ -109,11 +97,11 @@ async function initializeDatabaseTables(): Promise<void> {
             "created_at" timestamp DEFAULT now() NOT NULL,
             "updated_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
-      console.log("✅ Conversations table created/verified");
+      logger.db("Conversations table created/verified");
     } catch (err) {
-      console.warn("⚠️ Conversations table creation warning:", err);
+      logger.warn("Conversations table creation warning:", err);
     }
 
     try {
@@ -129,87 +117,83 @@ async function initializeDatabaseTables(): Promise<void> {
             "tool_result" jsonb,
             "created_at" timestamp DEFAULT now() NOT NULL
           );
-        `
+        `,
       );
-      console.log("✅ Messages table created/verified");
+      logger.db("Messages table created/verified");
     } catch (err) {
-      console.warn("⚠️ Messages table creation warning:", err);
+      logger.warn("Messages table creation warning:", err);
     }
 
     // Create indexes
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_conversations_user_id" ON "conversations"("user_id");`,
       );
-      console.log("✅ Conversations user_id index created/verified");
+      logger.db("Conversations user_id index created/verified");
     } catch (err) {
-      console.warn("⚠️ Conversations index creation warning:", err);
+      logger.warn("Conversations index creation warning:", err);
     }
 
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_conversation_id" ON "messages"("conversation_id");`,
       );
-      console.log("✅ Messages conversation_id index created/verified");
+      logger.db("Messages conversation_id index created/verified");
     } catch (err) {
-      console.warn("⚠️ Messages index creation warning:", err);
+      logger.warn("Messages index creation warning:", err);
     }
 
     try {
       await db.execute(
-        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`
+        sql`CREATE INDEX IF NOT EXISTS "idx_messages_user_id" ON "messages"("user_id");`,
       );
-      console.log("✅ Messages user_id index created/verified");
+      logger.db("Messages user_id index created/verified");
     } catch (err) {
-      console.warn("⚠️ Messages index creation warning:", err);
+      logger.warn("Messages index creation warning:", err);
     }
 
-    console.log("✅ Database tables initialized successfully.");
+    logger.success("Database tables initialized successfully.");
   } catch (error) {
-    console.error("❌ Database initialization error:", error instanceof Error ? error.message : error);
+    logger.error(
+      "Database initialization error:",
+      error instanceof Error ? error.message : error,
+    );
     throw error;
   }
 }
 
-/**
- * Verify database connection with retries
- */
 async function verifyDatabaseConnection(
   retries = 5,
-  delay = 2000, // 2 seconds
+  delay = 2000,
 ): Promise<void> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await db.execute(sql`SELECT 1`);
-      console.log("✅ Database connection verified successfully.");
-      return; // success
+      logger.success("Database connection verified successfully.");
+      return;
     } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(
-        `⚠️ Database connection attempt ${attempt} failed: ${errorMsg}`,
+      logger.warn(
+        `Database connection attempt ${attempt} failed: ${errorMsg}`,
       );
       if (attempt === retries) {
-        throw new Error(`❌ Database connection failed after ${retries} retries: ${errorMsg}`);
+        throw new Error(
+          `Database connection failed after ${retries} retries: ${errorMsg}`,
+        );
       }
-      console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+      logger.info(`Retrying in ${delay / 1000} seconds...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
 
-/**
- * Start the server
- */
 async function startServer() {
   try {
-    console.log("🔌 Verifying database connection...");
-    await verifyDatabaseConnection();
-
-    console.log("🔧 Setting up database...");
+    logger.db("Setting up database...");
     await initializeDatabaseTables();
 
     app.listen(port, () => {
-      console.log(`
+      logger.success(`
 🚀 Server is running!
 📡 Mode: ${env.NODE_ENV}
 🔗 URL: http://localhost:${port}
@@ -217,12 +201,12 @@ async function startServer() {
     });
   } catch (error: any) {
     if (error instanceof Error) {
-      console.error("❌ Server startup error:", error.message);
-      if (error.stack) console.error("Stack trace:", error.stack);
-    } else if (typeof error === 'object' && error !== null) {
-      console.error("❌ Server startup error:", JSON.stringify(error, null, 2));
+      logger.error("Server startup error:", error.message);
+      if (error.stack) logger.error("Stack trace:", error.stack);
+    } else if (typeof error === "object" && error !== null) {
+      logger.error("Server startup error:", JSON.stringify(error, null, 2));
     } else {
-      console.error("❌ Server startup error:", String(error));
+      logger.error("Server startup error:", String(error));
     }
     process.exit(1); // Stop server if DB cannot be reached
   }
@@ -232,16 +216,15 @@ async function startServer() {
 if (process.env.VERCEL !== "1") {
   startServer().catch((err: any) => {
     if (err instanceof Error) {
-      console.error("❌ Fatal Error:", err.message);
-      console.error("Stack:", err.stack);
-    } else if (typeof err === 'object' && err !== null) {
-      console.error("❌ Fatal Error:", JSON.stringify(err, null, 2));
+      logger.error("Fatal Error:", err.message);
+      logger.error("Stack:", err.stack);
+    } else if (typeof err === "object" && err !== null) {
+      logger.error("Fatal Error:", JSON.stringify(err, null, 2));
     } else {
-      console.error("❌ Fatal Error:", String(err));
+      logger.error("Fatal Error:", String(err));
     }
     process.exit(1);
   });
 }
 
-// Export for Vercel serverless
 export default app;

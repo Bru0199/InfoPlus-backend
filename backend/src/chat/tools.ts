@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getWeather } from "../services/weather.service.js";
 import { getStockPrice } from "../services/stock.service.js";
 import { getF1Matches } from "../services/f1.service.js";
+import { logger } from "../utils/logger.js";
 
 export const allTools = {
   // 1. Weather Tool
@@ -15,13 +16,13 @@ export const allTools = {
     }),
     execute: async (params: any) => {
       const { location } = params as { location: string };
-      console.log("passing the value location", { location });
+      logger.info("Weather tool - location:", { location });
 
       if (!location || location.trim() === "") {
         return "⚠️ I need a valid city name to provide weather info. Please specify one.";
       }
 
-      console.log("Calling getWeather API with location:", location);
+      logger.info("Calling getWeather API with location:", location);
 
       return await getWeather(location);
     },
@@ -35,13 +36,13 @@ export const allTools = {
     }),
     execute: async (params: any) => {
       const { symbol } = params as { symbol: string };
-      console.log("passing the value symbol", { symbol });
+      logger.info("Stock tool - symbol:", { symbol });
 
       if (!symbol || symbol.trim() === "") {
         return "⚠️ I need a valid symbol to provide stock info. Please specify one.";
       }
 
-      console.log("Calling getStockPrice API with symbol:", symbol);
+      logger.info("Calling getStockPrice API with symbol:", symbol);
 
       return await getStockPrice(symbol);
     },
@@ -54,9 +55,7 @@ export const allTools = {
     execute: async () => {
       const result = await getF1Matches();
 
-      console.log("---------------------------");
-      console.log("Called tool.js: nextrace");
-      console.log("---------------------------");
+      logger.info("F1 tool executed");
 
       return result;
     },

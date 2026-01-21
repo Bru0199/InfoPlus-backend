@@ -1,6 +1,8 @@
 import { Router } from "express";
 import passport from "passport";
 import { env } from "../env.js";
+import { logger } from "../utils/logger.js";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "../constants/index.js";
 
 const authRouter = Router();
 
@@ -37,13 +39,13 @@ authRouter.get(
       // Regenerate session to prevent session fixation attacks
       req.session.regenerate((err) => {
         if (err) {
-          console.error("❌ Session regeneration error:", err);
+          logger.error("Session regeneration error:", err);
           return res.redirect(`${REDIRECT_URL}/login?error=session`);
         }
 
         // Save user to session
         if (!req.user) {
-          console.error("❌ No user in request");
+          logger.error("No user in request");
           return res.redirect(`${REDIRECT_URL}/login?error=no_user`);
         }
 
@@ -51,11 +53,11 @@ authRouter.get(
 
         req.session.save((err) => {
           if (err) {
-            console.error("❌ Session save error:", err);
+            logger.error("Session save error:", err);
             return res.redirect(`${REDIRECT_URL}/login?error=session`);
           }
 
-          console.log("✅ Google auth success:", {
+          logger.auth("Google auth success:", {
             user: (req.user as any)?.email,
             userId: (req.user as any)?.id,
             sessionID: req.sessionID,
@@ -66,7 +68,7 @@ authRouter.get(
         });
       });
     } catch (error) {
-      console.error("❌ Google callback error:", error);
+      logger.error("Google callback error:", error);
       res.redirect(`${REDIRECT_URL}/login?error=callback`);
     }
   },
@@ -83,13 +85,13 @@ authRouter.get(
       // Regenerate session to prevent session fixation attacks
       req.session.regenerate((err) => {
         if (err) {
-          console.error("❌ Session regeneration error:", err);
+          logger.error("Session regeneration error:", err);
           return res.redirect(`${REDIRECT_URL}/login?error=session`);
         }
 
         // Save user to session
         if (!req.user) {
-          console.error("❌ No user in request");
+          logger.error("No user in request");
           return res.redirect(`${REDIRECT_URL}/login?error=no_user`);
         }
 
@@ -97,11 +99,11 @@ authRouter.get(
 
         req.session.save((err) => {
           if (err) {
-            console.error("❌ Session save error:", err);
+            logger.error("Session save error:", err);
             return res.redirect(`${REDIRECT_URL}/login?error=session`);
           }
 
-          console.log("✅ GitHub auth success:", {
+          logger.auth("GitHub auth success:", {
             user: (req.user as any)?.email,
             userId: (req.user as any)?.id,
             sessionID: req.sessionID,
@@ -112,7 +114,7 @@ authRouter.get(
         });
       });
     } catch (error) {
-      console.error("❌ GitHub callback error:", error);
+      logger.error("GitHub callback error:", error);
       res.redirect(`${REDIRECT_URL}/login?error=callback`);
     }
   },
@@ -120,7 +122,7 @@ authRouter.get(
 
 // --- Session Management ---
 authRouter.get("/me", (req, res) => {
-  console.log("🔍 /me endpoint:", {
+  logger.auth("/me endpoint:", {
     sessionID: req.sessionID,
     hasSession: !!req.session,
     isAuthenticated: req.isAuthenticated(),

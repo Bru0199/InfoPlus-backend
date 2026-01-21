@@ -1,13 +1,14 @@
 import passport from "passport";
-import googlePkg from "passport-google-oauth20"; // CommonJS default import
-import type { Profile } from "passport-google-oauth20"; // Type only
+import googlePkg from "passport-google-oauth20";
+import type { Profile } from "passport-google-oauth20";
 import { env } from "../env.js";
-import { findOrCreateUser } from "./userHelper.js"; // your reusable function
+import { findOrCreateUser } from "./userHelper.js";
+import { logger } from "../utils/logger.js";
 
 const GoogleStrategy = googlePkg.Strategy;
 
 const callbackURL = `${env.BACKEND_URL}/api/auth/google/callback`;
-console.log("🔵 Google OAuth configured with callback URL:", callbackURL);
+logger.auth("Google OAuth configured with callback URL:", callbackURL);
 
 const googleAuth = passport.use(
   new GoogleStrategy(
@@ -19,7 +20,7 @@ const googleAuth = passport.use(
     async (_accessToken, _refreshToken, profile: Profile, done) => {
       try {
         const email = profile.emails?.[0]?.value ?? "";
-        const image = profile.photos?.[0]?.value??"";
+        const image = profile.photos?.[0]?.value ?? "";
         const name = profile.displayName ?? "User";
 
         const user = await findOrCreateUser({

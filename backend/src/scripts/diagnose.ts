@@ -56,7 +56,9 @@ required.forEach((key) => {
 });
 
 if (missing.length > 0) {
-  console.log(`\n❌ Missing ${missing.length} variable(s): ${missing.join(", ")}`);
+  console.log(
+    `\n❌ Missing ${missing.length} variable(s): ${missing.join(", ")}`,
+  );
   console.log("   Please add them to .env file");
 } else {
   console.log("\n✅ All variables are set!");

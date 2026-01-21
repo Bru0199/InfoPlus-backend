@@ -1,6 +1,7 @@
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
+import { logger } from "../utils/logger.js";
 
 interface UserProfile {
   email: string;
@@ -12,7 +13,7 @@ interface UserProfile {
 
 export async function findOrCreateUser(profile: UserProfile) {
   try {
-    console.log("🔍 Finding or creating user:", {
+    logger.auth("Finding or creating user:", {
       provider: profile.provider,
       providerId: profile.providerId,
       email: profile.email,
@@ -29,7 +30,7 @@ export async function findOrCreateUser(profile: UserProfile) {
       );
 
     if (existingUser) {
-      console.log("✅ EXISTING USER - User found:", {
+      logger.auth("EXISTING USER - User found:", {
         id: existingUser.id,
         email: existingUser.email,
         provider: existingUser.provider,
@@ -37,7 +38,7 @@ export async function findOrCreateUser(profile: UserProfile) {
       return existingUser;
     }
 
-    console.log("📝 NEW USER - Creating new user for email:", profile.email);
+    logger.auth("NEW USER - Creating new user for email:", profile.email);
     const [newUser] = await db
       .insert(users)
       .values({
@@ -50,14 +51,14 @@ export async function findOrCreateUser(profile: UserProfile) {
       .returning();
 
     if (!newUser) throw new Error("Failed to create user");
-    console.log("✅ NEW USER - User created successfully:", {
+    logger.success("NEW USER - User created successfully:", {
       id: newUser.id,
       email: newUser.email,
       provider: newUser.provider,
     });
     return newUser;
   } catch (error) {
-    console.error("❌ Error in findOrCreateUser:", error);
+    logger.error("Error in findOrCreateUser:", error);
     throw error;
   }
 }

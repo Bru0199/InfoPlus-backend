@@ -1,5 +1,6 @@
 import { ChatService } from "../services/chatService.js";
 import { type Request, type Response } from "express";
+import { logger } from "../utils/logger.js";
 
 export const maxDuration = 30;
 
@@ -23,7 +24,6 @@ export const chatHandler = async (req: Request, res: Response) => {
 
     const toolCalls = await result.toolCalls;
 
-    // --- CONDITION: If no tools are called, use the Text Reader ---
     if (!toolCalls || toolCalls.length === 0) {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       const streamResponse = result.toTextStreamResponse();
@@ -37,16 +37,12 @@ export const chatHandler = async (req: Request, res: Response) => {
         }
       }
       return res.end();
-    }
-
-    // --- CONDITION: If toolCalls exist, extract the JSON ---
-    else {
+    } else {
       res.setHeader("Content-Type", "application/json");
       for await (const part of result.fullStream) {
         if (part.type === "tool-result") {
           const cleanOutput = (part as any).output;
           if (cleanOutput) {
-            // Sends ONLY the clean JSON content
             res.write(JSON.stringify(cleanOutput));
           }
         }
@@ -54,7 +50,7 @@ export const chatHandler = async (req: Request, res: Response) => {
       return res.end();
     }
   } catch (error) {
-    console.error("Chat API Error:", error);
+    logger.error("Chat API Error:", error);
     if (!res.headersSent) {
       res.status(500).json({ error: "Internal Server Error" });
     }

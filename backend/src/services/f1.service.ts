@@ -1,5 +1,5 @@
-// src/services/f1Service.ts
 import axios from "axios";
+import { logger } from "../utils/logger.js";
 
 export async function getF1Matches(): Promise<any> {
   const url = `https://api.jolpi.ca/ergast/f1/current/next.json`;
@@ -13,7 +13,7 @@ export async function getF1Matches(): Promise<any> {
     }
     return nextRace;
   } catch (error: any) {
-    console.error("F1 Service Error:", error.message);
+    logger.error("F1 Service Error:", error.message);
     return { error: "Failed to fetch F1 schedule." };
   }
 }
