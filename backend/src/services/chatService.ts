@@ -83,11 +83,10 @@ Always extract the necessary value from the user's message automatically.
       messages: coreMessages,
       tools: allTools,
       onFinish: async ({ response }) => {
-        logger.info("Chat stream finished, processing messages");
+        logger.info("Chat stream finished, storing messages");
 
         for (const msg of response.messages) {
-          if ((msg as any).role === "user" || (msg as any).role === "assistant")
-            continue;
+          if ((msg as any).role === "user") continue;
 
           const toolCalls =
             (msg as any).toolCalls ||
@@ -101,19 +100,23 @@ Always extract the necessary value from the user's message automatically.
               ? msg.content.filter((p) => p.type === "tool-result")
               : null);
 
-          await db.insert(messagesTable).values({
-            conversationId,
-            userId,
-            role: msg.role as any,
-            content:
-              typeof msg.content === "string"
-                ? msg.content
-                : JSON.stringify(msg.content),
-            toolCalls: toolCalls?.length ? JSON.stringify(toolCalls) : null,
-            toolResult: toolResults?.length
-              ? JSON.stringify(toolResults)
-              : null,
-          });
+          try {
+            await db.insert(messagesTable).values({
+              conversationId,
+              userId,
+              role: msg.role as any,
+              content:
+                typeof msg.content === "string"
+                  ? msg.content
+                  : JSON.stringify(msg.content),
+              toolCalls: toolCalls?.length ? JSON.stringify(toolCalls) : null,
+              toolResult: toolResults?.length
+                ? JSON.stringify(toolResults)
+                : null,
+            });
+          } catch (error) {
+            logger.error("Error storing message:", error);
+          }
         }
       },
     });
