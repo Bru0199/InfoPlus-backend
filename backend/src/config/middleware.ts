@@ -31,7 +31,7 @@ export function configureCors(allowedOrigins: string[]) {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
-    credentials: true, // Allow cookies in both directions
+    credentials: true,
     methods: CORS_ALLOWED_PATHS.METHODS,
     allowedHeaders: CORS_ALLOWED_PATHS.HEADERS,
     exposedHeaders: CORS_ALLOWED_PATHS.EXPOSED_HEADERS,
@@ -64,6 +64,7 @@ export function configureSession(pool: Pool): any {
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       path: COOKIE_CONFIG.PATH,
+      domain: isProduction ? ".vercel.app" : undefined,
     },
   };
 

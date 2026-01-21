@@ -39,6 +39,18 @@ app.set("trust proxy", 1);
 // MIDDLEWARE CONFIGURATION
 // ============================================================================
 
+// CORS middleware - MUST come FIRST before session (for credentials to work)
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  "https://info-plus-frontend.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+app.use(configureCors(allowedOrigins));
+
+// Body parser middleware - MUST come before session
+app.use(express.json());
+
 // Session middleware - MUST come before Passport
 app.use(configureSession(pool));
 
@@ -51,18 +63,6 @@ app.use((req, res, next) => {
   });
   next();
 });
-
-// CORS middleware - MUST be before routes
-const allowedOrigins = [
-  env.FRONTEND_URL,
-  "https://info-plus-frontend.vercel.app",
-  "http://localhost:3000",
-  "http://localhost:5173",
-];
-app.use(configureCors(allowedOrigins));
-
-// Body parser middleware
-app.use(express.json());
 
 // ============================================================================
 // AUTHENTICATION
