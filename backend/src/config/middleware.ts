@@ -58,7 +58,7 @@ export function configureSession(pool: Pool): any {
     name: COOKIE_CONFIG.NAME,
     cookie: {
       maxAge: COOKIE_CONFIG.MAX_AGE,
-      secure: isProduction,
+      secure: isProduction ? true : false,
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       path: COOKIE_CONFIG.PATH,

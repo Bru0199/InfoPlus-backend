@@ -105,6 +105,10 @@ app.get(API_ROUTES.HEALTH, (req, res) => {
       authenticated: req.isAuthenticated?.() || false,
     },
     environment: env.NODE_ENV,
+    corsConfig: {
+      frontendUrl: env.FRONTEND_URL,
+      nodeEnv: env.NODE_ENV,
+    },
   });
 });
 
