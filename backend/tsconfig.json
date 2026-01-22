@@ -43,5 +43,5 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
   },
-  "exclude": ["drizzle.config.ts", "node_modules"]
+  "exclude": ["dist", "drizzle.config.ts", "node_modules"]
 }
