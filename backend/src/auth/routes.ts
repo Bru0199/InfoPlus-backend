@@ -206,6 +206,7 @@ authRouter.get("/me", (req, res) => {
   res.setHeader('X-Session-ID', req.sessionID || 'none');
   res.setHeader('X-Has-Cookie', req.headers.cookie ? 'yes' : 'no');
   res.setHeader('X-Authenticated', req.isAuthenticated() ? 'yes' : 'no');
+  res.setHeader('X-Session-Valid', req.session ? 'yes' : 'no');
   
   res.json({
     user: req.user || null,
