@@ -202,6 +202,11 @@ authRouter.post("/link-provider", async (req, res) => {
 
 // --- Session Management ---
 authRouter.get("/me", (req, res) => {
+  // Debug headers for production
+  res.setHeader('X-Session-ID', req.sessionID || 'none');
+  res.setHeader('X-Has-Cookie', req.headers.cookie ? 'yes' : 'no');
+  res.setHeader('X-Authenticated', req.isAuthenticated() ? 'yes' : 'no');
+  
   res.json({
     user: req.user || null,
     authenticated: req.isAuthenticated(),
