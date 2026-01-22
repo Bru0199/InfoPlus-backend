@@ -34,31 +34,40 @@ authRouter.get("/github", (req, res, next) => {
 authRouter.get(
   "/google/callback",
   (req, res, next) => {
-    passport.authenticate("google", { failureRedirect: `${REDIRECT_URL}/login` }, (err: any, user: any, info: any) => {
+    passport.authenticate("google", { failureRedirect: `${REDIRECT_URL}/login` }, (err: any, user: any) => {
       if (err) return next(err);
       
-      if (info?.pendingLink) {
+      // Check if there's a pending link (same email, different provider)
+      if (user?._pendingLink) {
+        // Store pending link info in session WITHOUT logging in
         (req.session as any).pendingLink = {
           email: user.email,
-          provider: user.provider,
-          providerId: user.providerId,
+          newProvider: user._newProvider,
+          newProviderId: user._newProviderId,
+          existingUserId: user.id,
         };
-        req.session.save(() => {
-          logger.auth("Pending link stored in session");
-          res.redirect(
-            `${REDIRECT_URL}/link-provider?email=${encodeURIComponent(user.email)}&provider=${user.provider}&newProviderName=Google`,
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            logger.error("Session save error:", saveErr);
+            return next(saveErr);
+          }
+          return res.redirect(
+            `${REDIRECT_URL}/link-provider?email=${encodeURIComponent(user.email)}&provider=${user._newProvider}&providerId=${user._newProviderId}`,
           );
         });
       } else {
-        req.logIn(user, (err) => {
-          if (err) return next(err);
-          logger.auth("Google auth success:", {
-            user: (req.user as any)?.email,
-            userId: (req.user as any)?.id,
-            sessionID: req.sessionID,
-            isAuthenticated: req.isAuthenticated(),
+        // New user or existing provider - log them in
+        req.logIn(user, (loginErr) => {
+          if (loginErr) return next(loginErr);
+          
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              logger.error("Session save error:", saveErr);
+              return next(saveErr);
+            }
+            
+            res.redirect(CHAT_REDIRECT_URL);
           });
-          res.redirect(CHAT_REDIRECT_URL);
         });
       }
     })(req, res, next);
@@ -68,31 +77,40 @@ authRouter.get(
 authRouter.get(
   "/github/callback",
   (req, res, next) => {
-    passport.authenticate("github", { failureRedirect: `${REDIRECT_URL}/login` }, (err: any, user: any, info: any) => {
+    passport.authenticate("github", { failureRedirect: `${REDIRECT_URL}/login` }, (err: any, user: any) => {
       if (err) return next(err);
       
-      if (info?.pendingLink) {
+      // Check if there's a pending link (same email, different provider)
+      if (user?._pendingLink) {
+        // Store pending link info in session WITHOUT logging in
         (req.session as any).pendingLink = {
           email: user.email,
-          provider: user.provider,
-          providerId: user.providerId,
+          newProvider: user._newProvider,
+          newProviderId: user._newProviderId,
+          existingUserId: user.id,
         };
-        req.session.save(() => {
-          logger.auth("Pending link stored in session");
-          res.redirect(
-            `${REDIRECT_URL}/link-provider?email=${encodeURIComponent(user.email)}&provider=${user.provider}&newProviderName=GitHub`,
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            logger.error("Session save error:", saveErr);
+            return next(saveErr);
+          }
+          return res.redirect(
+            `${REDIRECT_URL}/link-provider?email=${encodeURIComponent(user.email)}&provider=${user._newProvider}&providerId=${user._newProviderId}`,
           );
         });
       } else {
-        req.logIn(user, (err) => {
-          if (err) return next(err);
-          logger.auth("GitHub auth success:", {
-            user: (req.user as any)?.email,
-            userId: (req.user as any)?.id,
-            sessionID: req.sessionID,
-            isAuthenticated: req.isAuthenticated(),
+        // New user or existing provider - log them in
+        req.logIn(user, (loginErr) => {
+          if (loginErr) return next(loginErr);
+          
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              logger.error("Session save error:", saveErr);
+              return next(saveErr);
+            }
+            
+            res.redirect(CHAT_REDIRECT_URL);
           });
-          res.redirect(CHAT_REDIRECT_URL);
         });
       }
     })(req, res, next);
@@ -100,39 +118,51 @@ authRouter.get(
 );
 
 // --- Linking Management ---
-authRouter.post("/link-provider", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: "Not authenticated" });
+authRouter.get("/link-provider/info", async (req, res) => {
+  const { email, provider, providerId } = req.query;
+
+  if (!email || !provider || !providerId) {
+    return res.status(400).json({ error: "Missing required query parameters: email, provider, providerId" });
   }
 
-  const { email, provider, providerUserId } = req.body;
-  const userId = (req.user as any)?.id;
+  res.json({
+    email,
+    provider,
+    providerId,
+    message: `Link your ${provider} account to ${email}?`,
+  });
+});
 
-  if (!email || !provider || !providerUserId || !userId) {
-    return res.status(400).json({ error: "Missing required fields" });
+authRouter.post("/link-provider/decline", async (req, res) => {
+  // Clear pending link from session
+  (req.session as any).pendingLink = null;
+  req.session.save((err) => {
+    if (err) {
+      logger.error("Session save error:", err);
+      return res.status(500).json({ error: "Failed to clear session" });
+    }
+    res.json({ success: true, message: "Link declined", redirectUrl: `${REDIRECT_URL}/login` });
+  });
+});
+
+authRouter.post("/link-provider", async (req, res) => {
+  const { email, provider, providerUserId } = req.body;
+  const pendingLink = (req.session as any)?.pendingLink;
+
+  if (!pendingLink) {
+    return res.status(400).json({ error: "No pending link found. Please try logging in again." });
+  }
+
+  if (!email || !provider || !providerUserId) {
+    return res.status(400).json({ error: "Missing required fields: email, provider, providerUserId" });
+  }
+
+  if (pendingLink.email !== email) {
+    return res.status(403).json({ error: "Email mismatch" });
   }
 
   try {
-    // Verify the email matches the current user's email
-    const [currentUser] = await db.select().from(users).where(eq(users.id, userId));
-    if (!currentUser || currentUser.email !== email) {
-      return res.status(403).json({ error: "Email mismatch" });
-    }
-
-    // Check if provider is already linked
-    const [existing] = await db
-      .select()
-      .from(authProviders)
-      .where(
-        and(
-          eq(authProviders.userId, userId),
-          eq(authProviders.provider, provider as any),
-        ),
-      );
-
-    if (existing) {
-      return res.status(400).json({ error: "Provider already linked" });
-    }
+    const userId = pendingLink.existingUserId;
 
     // Link the provider
     await db.insert(authProviders).values({
@@ -141,8 +171,29 @@ authRouter.post("/link-provider", async (req, res) => {
       providerUserId,
     });
 
-    logger.success("Provider linked:", { userId, email, provider });
-    res.json({ success: true, message: "Provider linked successfully" });
+    // Now log the user in
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    req.logIn(user, (err) => {
+      if (err) {
+        logger.error("Login error after linking:", err);
+        return res.status(500).json({ error: "Failed to log in" });
+      }
+
+      // Clear pending link
+      (req.session as any).pendingLink = null;
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          logger.error("Session save error:", saveErr);
+          return res.status(500).json({ error: "Session save failed" });
+        }
+
+        res.json({ success: true, message: "Provider linked and logged in successfully" });
+      });
+    });
   } catch (error) {
     logger.error("Error linking provider:", error);
     res.status(500).json({ error: "Failed to link provider" });
@@ -151,14 +202,6 @@ authRouter.post("/link-provider", async (req, res) => {
 
 // --- Session Management ---
 authRouter.get("/me", (req, res) => {
-  logger.auth("/me endpoint:", {
-    sessionID: req.sessionID,
-    hasSession: !!req.session,
-    isAuthenticated: req.isAuthenticated(),
-    user: req.user,
-    sessionData: req.session,
-  });
-
   res.json({
     user: req.user || null,
     authenticated: req.isAuthenticated(),

@@ -24,10 +24,8 @@ export function configureCors(allowedOrigins: string[]) {
       }
 
       if (allowedOrigins.includes(origin)) {
-        logger.info(`✅ CORS allowed origin: ${origin}`);
         callback(null, true);
       } else {
-        logger.warn(`❌ CORS blocked origin: ${origin}`);
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
@@ -55,7 +53,7 @@ export function configureSession(pool: Pool): any {
     }),
     secret: env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     proxy: true,
     name: COOKIE_CONFIG.NAME,
     cookie: {
@@ -64,6 +62,7 @@ export function configureSession(pool: Pool): any {
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       path: COOKIE_CONFIG.PATH,
+      domain: isProduction ? undefined : undefined,
     },
   };
 
