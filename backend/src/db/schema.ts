@@ -7,6 +7,7 @@ import {
   pgEnum,
   varchar,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", [
@@ -27,6 +28,29 @@ export const users = pgTable("users", {
   providerId: text("provider_id").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const authProviders = pgTable(
+  "auth_providers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    provider: providerEnum("provider").notNull(),
+    providerUserId: text("provider_user_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    providerUserUnique: uniqueIndex("auth_providers_provider_user_unique").on(
+      table.provider,
+      table.providerUserId,
+    ),
+    userProviderUnique: uniqueIndex("auth_providers_user_provider_unique").on(
+      table.userId,
+      table.provider,
+    ),
+  }),
+);
 
 export const conversations = pgTable("conversations", {
   id: uuid("id").defaultRandom().primaryKey(),

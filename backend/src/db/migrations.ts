@@ -53,6 +53,34 @@ async function createUsersTable(): Promise<void> {
   }
 }
 
+async function createAuthProvidersTable(): Promise<void> {
+  try {
+    await db.execute(
+      sql`
+        CREATE TABLE IF NOT EXISTS "auth_providers" (
+          "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+          "provider" text NOT NULL,
+          "provider_user_id" text NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          CONSTRAINT auth_providers_provider_user_unique UNIQUE ("provider", "provider_user_id"),
+          CONSTRAINT auth_providers_user_provider_unique UNIQUE ("user_id", "provider")
+        );
+      `,
+    );
+    await db.execute(
+      sql`
+        INSERT INTO "auth_providers" ("user_id", "provider", "provider_user_id")
+        SELECT u."id", u."provider", u."provider_id" FROM "users" u
+        ON CONFLICT DO NOTHING;
+      `,
+    );
+    logger.db("auth_providers table created/verified and backfilled");
+  } catch (error) {
+    logger.warn("auth_providers table creation warning:", error);
+  }
+}
+
 async function createConversationsTable(): Promise<void> {
   try {
     await db.execute(
@@ -131,6 +159,7 @@ export async function initializeDatabaseTables(): Promise<void> {
     await createSessionTable();
     await createSessionIndex();
     await createUsersTable();
+    await createAuthProvidersTable();
     await createConversationsTable();
     await createMessagesTable();
 

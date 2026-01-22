@@ -2,7 +2,7 @@ import passport from "passport";
 import githubPkg from "passport-github2";
 import type { Profile } from "passport-github2";
 import { env } from "../env.js";
-import { findOrCreateUser } from "./userHelper.js";
+import { findOrCreateUser, PendingLinkError } from "./userHelper.js";
 import { logger } from "../utils/logger.js";
 
 const GitHubStrategy = githubPkg.Strategy;
@@ -41,7 +41,7 @@ const githubAuth = passport.use(
         const email: string = profile.emails?.[0]?.value ?? "";
         const image = profile.photos?.[0]?.value ?? "";
         const name = profile.username ?? "User";
-        const user = await findOrCreateUser({
+        const result = await findOrCreateUser({
           email,
           name: name,
           image: image,
@@ -49,8 +49,12 @@ const githubAuth = passport.use(
           providerId: profile.id,
         });
 
-        done(null, user);
+        done(null, result.user, { pendingLink: result.action === "pending_link" });
       } catch (err) {
+        if (err instanceof PendingLinkError) {
+          // Return user info for pending link, not an error
+          return done(null, { email: err.email, provider: err.provider, providerId: err.providerId }, { pendingLink: true });
+        }
         done(err, undefined);
       }
     },

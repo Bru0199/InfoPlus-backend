@@ -2,7 +2,7 @@ import passport from "passport";
 import googlePkg from "passport-google-oauth20";
 import type { Profile } from "passport-google-oauth20";
 import { env } from "../env.js";
-import { findOrCreateUser } from "./userHelper.js";
+import { findOrCreateUser, PendingLinkError } from "./userHelper.js";
 import { logger } from "../utils/logger.js";
 
 const GoogleStrategy = googlePkg.Strategy;
@@ -23,7 +23,7 @@ const googleAuth = passport.use(
         const image = profile.photos?.[0]?.value ?? "";
         const name = profile.displayName ?? "User";
 
-        const user = await findOrCreateUser({
+        const result = await findOrCreateUser({
           email,
           name,
           image,
@@ -31,8 +31,12 @@ const googleAuth = passport.use(
           providerId: profile.id,
         });
 
-        done(null, user);
+        done(null, result.user, { pendingLink: result.action === "pending_link" });
       } catch (err) {
+        if (err instanceof PendingLinkError) {
+          // Return user info for pending link, not an error
+          return done(null, { email: err.email, provider: err.provider, providerId: err.providerId }, { pendingLink: true });
+        }
         done(err);
       }
     },

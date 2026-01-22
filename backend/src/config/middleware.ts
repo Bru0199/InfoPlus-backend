@@ -54,8 +54,8 @@ export function configureSession(pool: Pool): any {
       createTableIfMissing: true,
     }),
     secret: env.SESSION_SECRET,
-    resave: SESSION_CONFIG.RESAVE,
-    saveUninitialized: SESSION_CONFIG.SAVE_UNINITIALIZED,
+    resave: false,
+    saveUninitialized: true,
     proxy: true,
     name: COOKIE_CONFIG.NAME,
     cookie: {
@@ -64,7 +64,6 @@ export function configureSession(pool: Pool): any {
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       path: COOKIE_CONFIG.PATH,
-      domain: isProduction ? ".vercel.app" : undefined,
     },
   };
 
