@@ -62,7 +62,6 @@ export function configureSession(pool: Pool): any {
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       path: COOKIE_CONFIG.PATH,
-      domain: isProduction ? undefined : undefined,
     },
   };
 
