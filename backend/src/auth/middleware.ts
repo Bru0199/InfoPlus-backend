@@ -6,19 +6,6 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction,
 ) => {
-  logger.auth("Auth check:", {
-    path: req.path,
-    sessionID: req.sessionID,
-    hasSession: !!req.session,
-    isAuthenticated: req.isAuthenticated(),
-    user: (req.user as any)?.email || null,
-    cookies: req.cookies,
-    headers: {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-    },
-  });
-
   if (req.isAuthenticated()) {
     return next();
   }
