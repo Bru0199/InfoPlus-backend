@@ -4,6 +4,9 @@ import type { Profile } from "passport-google-oauth20";
 import { env } from "../env.js";
 import { findOrCreateUser, PendingLinkError } from "./userHelper.js";
 import { logger } from "../utils/logger.js";
+import { db } from "../db/index.js";
+import { users } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 
 const GoogleStrategy = googlePkg.Strategy;
 
@@ -31,13 +34,24 @@ const googleAuth = passport.use(
           providerId: profile.id,
         });
 
-        done(null, result.user, { pendingLink: result.action === "pending_link" });
+        done(null, result.user);
       } catch (err) {
         if (err instanceof PendingLinkError) {
-          // Return user info for pending link, not an error
-          return done(null, { email: err.email, provider: err.provider, providerId: err.providerId }, { pendingLink: true });
+          // Find existing user by email and return with pending link flag
+          const [existingUser] = await db.select().from(users).where(eq(users.email, err.email));
+          if (existingUser) {
+            done(null, {
+              ...existingUser,
+              _pendingLink: true,
+              _newProvider: "google",
+              _newProviderId: err.providerId,
+            } as any);
+          } else {
+            done(new Error("User not found for pending link"));
+          }
+        } else {
+          done(err);
         }
-        done(err);
       }
     },
   ),
