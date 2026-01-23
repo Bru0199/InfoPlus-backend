@@ -35,8 +35,6 @@ const port = env.PORT ?? 3000;
 logger.info("Server configuration:", {
   port,
   env: process.env.NODE_ENV,
-  backend_url: process.env.BACKEND_URL,
-  frontend_url: process.env.FRONTEND_URL,
 });
 
 async function initializeDatabaseTables(): Promise<void> {

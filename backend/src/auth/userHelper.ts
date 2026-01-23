@@ -31,12 +31,6 @@ export class PendingLinkError extends Error {
 
 export async function findOrCreateUser(profile: UserProfile): Promise<FindOrCreateUserResult> {
   try {
-    logger.auth("Finding or creating user:", {
-      provider: profile.provider,
-      providerId: profile.providerId,
-      email: profile.email,
-    });
-
     // Check if this provider+providerId is already linked
     const [linkedUser] = await db
       .select({ user: users })
@@ -50,11 +44,6 @@ export async function findOrCreateUser(profile: UserProfile): Promise<FindOrCrea
       );
 
     if (linkedUser?.user) {
-      logger.auth("EXISTING USER - Provider already linked:", {
-        id: linkedUser.user.id,
-        email: linkedUser.user.email,
-        provider: profile.provider,
-      });
       return { user: linkedUser.user, action: "login" };
     }
 
@@ -69,11 +58,7 @@ export async function findOrCreateUser(profile: UserProfile): Promise<FindOrCrea
         .where(eq(authProviders.userId, emailUser.id));
 
       const existingProviderNames = existingProviders.map((p) => p.provider);
-      logger.warn("PENDING LINK - Email exists with different provider:", {
-        email: profile.email,
-        newProvider: profile.provider,
-        existingProviders: existingProviderNames,
-      });
+      logger.warn("PENDING LINK - Email exists with different provider");
 
       throw new PendingLinkError(
         profile.email,
@@ -108,11 +93,7 @@ export async function findOrCreateUser(profile: UserProfile): Promise<FindOrCrea
       return createdUser;
     });
 
-    logger.success("NEW USER - User created and provider linked:", {
-      id: newUser.id,
-      email: newUser.email,
-      provider: profile.provider,
-    });
+    logger.success("NEW USER - User created and provider linked");
     return { user: newUser, action: "new_user" };
   } catch (error) {
     logger.error("Error in findOrCreateUser:", error);

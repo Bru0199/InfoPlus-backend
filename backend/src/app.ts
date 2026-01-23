@@ -57,9 +57,7 @@ app.use(configureSession(pool));
 // Request logging middleware
 app.use((req, res, next) => {
   logger.request(req.method, req.path, {
-    sessionID: req.sessionID,
-    isAuthenticated: req.isAuthenticated?.(),
-    user: (req.user as any)?.email || null,
+    authenticated: req.isAuthenticated?.() || false,
   });
   next();
 });
