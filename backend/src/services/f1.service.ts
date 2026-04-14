@@ -5,8 +5,11 @@ export async function getF1Matches(): Promise<any> {
   const url = `https://api.jolpi.ca/ergast/f1/current/next.json`;
 
   try {
+    logger.info("F1 API URL:", url);
     const { data } = await axios.get(url);
-    const nextRace = data.MRData.RaceTable.Races[0];
+    logger.info("F1 API raw response (truncated):", JSON.stringify(data).slice(0, 300));
+    const races = data?.MRData?.RaceTable?.Races;
+    const nextRace = Array.isArray(races) ? races[0] : null;
 
     if (!nextRace) {
       return { error: "No upcoming races found." };
