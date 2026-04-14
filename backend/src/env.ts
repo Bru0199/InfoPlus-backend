@@ -26,7 +26,8 @@ const envSchema = z.object({
   EODHD_API_TOKEN: z.string().min(1, "Alpha Vantage API key is required"),
 
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1, "OpenAI API key is required"),
-  OPENROUTER_API_KEY: z.string().min(1, "OpenAI API key is required"),
+  OPENROUTER_API_KEY: z.string().min(1, "OpenRouter API key is required"),
+  OPENROUTER_MODEL: z.string().default("google/gemini-2.0-flash-exp:free"),
 
   SESSION_SECRET: z.string().min(1, "SessionSecret key is required"),
 
@@ -57,7 +58,7 @@ if (!_env.success) {
   logger.error("  - OPENWEATHER_API_KEY");
   logger.error("  - EODHD_API_TOKEN");
   logger.error("  - GOOGLE_GENERATIVE_AI_API_KEY");
-  logger.error("  - OPENROUTER_API_KEY");
+  logger.error("  - OPENROUTER_API_KEY, OPENROUTER_MODEL (optional)");
   logger.error("  - SESSION_SECRET");
   logger.error("  - FRONTEND_URL");
   logger.error("  - BACKEND_URL");

@@ -42,7 +42,6 @@ app.set("trust proxy", 1);
 // CORS middleware - MUST come FIRST before session (for credentials to work)
 const allowedOrigins = [
   env.FRONTEND_URL,
-  "https://info-plus-frontend.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
 ];

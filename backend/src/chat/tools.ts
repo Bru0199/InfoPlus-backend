@@ -19,7 +19,7 @@ export const allTools = {
       logger.info("Weather tool - location:", { location });
 
       if (!location || location.trim() === "") {
-        return "⚠️ I need a valid city name to provide weather info. Please specify one.";
+        return { error: "Please specify a city name for weather." };
       }
 
       logger.info("Calling getWeather API with location:", location);
@@ -39,7 +39,7 @@ export const allTools = {
       logger.info("Stock tool - symbol:", { symbol });
 
       if (!symbol || symbol.trim() === "") {
-        return "⚠️ I need a valid symbol to provide stock info. Please specify one.";
+        return { error: "Please specify a stock symbol (e.g. AAPL, TSLA)." };
       }
 
       logger.info("Calling getStockPrice API with symbol:", symbol);
